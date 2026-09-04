@@ -23,9 +23,10 @@ AwesomeProject/
 ├── components/       # Global components
 ├── hooks/            # Global hooks
 ├── store/            # Zustand stores
-├── services/         # API services
+├── services/         # API services (client)
 ├── utils/            # Utilities
 ├── localization/     # i18n
+├── server/           # Backend API (Express + TypeScript)
 └── __tests__/        # Tests
 ```
 
@@ -38,6 +39,7 @@ AwesomeProject/
 - React Hook Form + Zod
 - Axios
 - i18next
+- Backend: Express + TypeScript (see `server/README.md`)
 
 ## 📦 Installation
 
@@ -45,6 +47,19 @@ AwesomeProject/
 npm install
 npm start
 ```
+
+## 🖥️ Backend
+
+The app needs the API in `server/` running to do anything beyond the sign-in screen (auth, chat, profile, uploads). See `server/README.md` for setup; the short version:
+
+```bash
+cd server
+npm install
+cp .env.example .env
+npm run dev   # http://localhost:3000
+```
+
+The default `EXPO_PUBLIC_API_URL` in `.env.example` already points at it.
 
 ## 🧪 Testing
 

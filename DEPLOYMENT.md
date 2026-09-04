@@ -48,15 +48,23 @@ Then, in your repository on GitHub:
 3. Select the `gh-pages` branch, `/ (root)` folder
 4. Save — your app will be live at `https://YOUR_USERNAME.github.io/awesome-tracker-app`
 
-## Step 5: Configure Environment Variables
+## Step 5: Deploy the Backend
 
-Client-side environment variables must be prefixed with `EXPO_PUBLIC_` (see `.env.example`) and are baked into the build at build time — set them before running `npm run build:web`:
+The web app is static (GitHub Pages), but `server/` is a stateful Node API and needs a real host — GitHub Pages can't run it. See `server/README.md` for the full guide; in short, deploy `server/` to any Node host (Render, Railway, Fly.io, a VPS) with:
+
+- `JWT_SECRET` set to a long random string
+- `CORS_ORIGIN` including your GitHub Pages origin (`https://YOUR_USERNAME.github.io`)
+- a persistent disk/volume for `data/` and `uploads/` (an ephemeral filesystem loses them on redeploy)
+
+## Step 6: Configure Environment Variables
+
+Client-side environment variables must be prefixed with `EXPO_PUBLIC_` (see `.env.example`) and are baked into the build at build time — set them before running `npm run build:web`, pointing at your deployed backend from Step 5:
 
 ```bash
-EXPO_PUBLIC_API_URL=https://your-api.example.com/api npm run build:web
+EXPO_PUBLIC_API_URL=https://your-api-host.example.com/api npm run build:web
 ```
 
-## Step 6: Test Your Deployment
+## Step 7: Test Your Deployment
 
 Your app will be live at: `https://YOUR_USERNAME.github.io/awesome-tracker-app`
 
