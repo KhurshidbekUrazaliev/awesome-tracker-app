@@ -4,7 +4,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
-import { isDbWritable } from './db';
+import { isDbReachable } from './db/client';
 import { logger } from './logger';
 import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
@@ -66,9 +66,9 @@ app.use(
 );
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
-app.get('/api/ready', (_req, res) => {
-  if (!isDbWritable()) {
-    return res.status(503).json({ status: 'not ready', reason: 'data store is not writable' });
+app.get('/api/ready', async (_req, res) => {
+  if (!(await isDbReachable())) {
+    return res.status(503).json({ status: 'not ready', reason: 'database is not reachable' });
   }
   res.json({ status: 'ready' });
 });

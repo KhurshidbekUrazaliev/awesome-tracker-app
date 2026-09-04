@@ -1,6 +1,6 @@
 # Backend API
 
-An Express + TypeScript API implementing exactly what the app's `services/*.ts` clients expect: JWT auth, profile/avatar management, and chat. Data is persisted to a local JSON file (`data/db.json`) — enough for development and demos, not a production datastore (see [Known limitations](#known-limitations)).
+An Express + TypeScript API implementing exactly what the app's `services/*.ts` clients expect: JWT auth, profile/avatar management, and chat. Data is persisted to Postgres via [Drizzle ORM](https://orm.drizzle.team) — schema in `src/db/schema.ts`, migrations in `drizzle/`.
 
 Full endpoint reference: [`openapi.yaml`](./openapi.yaml) (open it at [editor.swagger.io](https://editor.swagger.io) for an interactive view, or `npx @redocly/cli preview-docs openapi.yaml`).
 
@@ -9,8 +9,10 @@ Full endpoint reference: [`openapi.yaml`](./openapi.yaml) (open it at [editor.sw
 ```bash
 cd server
 npm install
-cp .env.example .env   # edit JWT_SECRET, CORS_ORIGIN as needed
-npm run dev             # http://localhost:3000, structured logs pretty-printed
+cp .env.example .env      # edit JWT_SECRET, CORS_ORIGIN, DATABASE_URL as needed
+docker compose -f ../docker-compose.yml up postgres -d   # or point DATABASE_URL at any Postgres
+npm run db:migrate
+npm run dev                # http://localhost:3000, structured logs pretty-printed
 ```
 
 Then point the app at it (from the repo root):
@@ -21,27 +23,44 @@ EXPO_PUBLIC_API_URL=http://localhost:3000/api npm start
 
 `.env.example` at the repo root already defaults to this URL, so a plain `npm start` picks it up automatically.
 
+### Free Postgres for local/staging use
+
+[Neon](https://neon.tech) and [Supabase](https://supabase.com) both have a genuinely free tier (no card required) — either works as `DATABASE_URL`. Their connection strings already include `?sslmode=require`; the driver reads that directly from the URL, no extra config needed.
+
+### Schema changes
+
+Edit `src/db/schema.ts`, then:
+
+```bash
+npm run db:generate   # writes a new SQL file under drizzle/
+npm run db:migrate    # applies pending migrations
+```
+
+Commit the generated `drizzle/*.sql` file — it's the source of truth for what ships, not the TypeScript schema by itself.
+
 ## Run with Docker
 
 ```bash
 cd server
 docker build -t awesome-tracker-api .
-docker run -p 3000:3000 -e JWT_SECRET=dev-secret awesome-tracker-api
+docker run -p 3000:3000 -e JWT_SECRET=dev-secret -e DATABASE_URL=postgres://... awesome-tracker-api
 ```
 
-Or bring up the whole stack (API + web, built for local self-hosting) from the repo root:
+Or bring up the whole stack (Postgres + API + web, built for local self-hosting) from the repo root:
 
 ```bash
 docker compose up --build
 # API: http://localhost:3000   Web: http://localhost:8080
 ```
 
+The container runs pending migrations automatically on start (`dist/db/migrate.js`) before starting the server.
+
 ## Endpoints
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/api/health` | – | liveness probe |
-| GET | `/api/ready` | – | readiness probe (checks the data store is writable) |
+| GET | `/api/ready` | – | readiness probe (checks the database is reachable) |
 | POST | `/api/auth/signup` | – | `{ name, email, password }` → `{ token, user }` |
 | POST | `/api/auth/login` | – | `{ email, password }` → `{ token, user }` |
 | POST | `/api/auth/logout` | – | stateless JWT, no-op |
@@ -70,7 +89,8 @@ Authenticated routes expect `Authorization: Bearer <token>`.
 - Structured JSON logs (`pino`/`pino-http`), pretty-printed in dev.
 - `/api/ready` distinguishes "process is up" from "can actually serve requests" for orchestrators.
 - Graceful shutdown on `SIGTERM`/`SIGINT` (drains in-flight requests before exiting).
-- Multi-stage Dockerfile: non-root user, `npm ci --omit=dev` in the runtime layer, built-in `HEALTHCHECK`.
+- Multi-stage Dockerfile: non-root user, `npm ci --omit=dev` in the runtime layer, built-in `HEALTHCHECK`, migrations applied on boot.
+- Normalized relational schema (users / conversations / conversation_participants / messages) with foreign keys and `ON DELETE CASCADE` — deleting a user cleanly removes their memberships and messages, verified end to end.
 - Zod validation on write endpoints (signup, profile update); every chat/profile mutation checks resource ownership/membership before acting.
 
 ## CI/CD
@@ -79,23 +99,24 @@ Authenticated routes expect `Authorization: Bearer <token>`.
 - `.github/workflows/cd-backend-image.yml` — on push to `main` touching `server/**`, builds this Dockerfile and pushes to GitHub Container Registry as `ghcr.io/<owner>/<repo>/api:latest` and `:sha-<short-sha>`. No external credentials needed (uses `GITHUB_TOKEN`).
 - `.github/workflows/cd-pages.yml` — builds and publishes the web app to GitHub Pages on push to `main`.
 
-To actually deploy the published image, point any container host (Render, Railway, Fly.io, a VPS) at `ghcr.io/<owner>/<repo>/api:latest`.
+To actually deploy the published image, point any container host (Render, Koyeb, Fly.io, a VPS) at `ghcr.io/<owner>/<repo>/api:latest`. Note: GHCR packages are private by default even in a public repo — make the package public (repo → Packages → api → Package settings) or give your host's puller a `read:packages` token.
 
 ## Deploying
 
-This is a stateful Node process (in-memory + a JSON file on disk), so it needs a persistent Node/container host — GitHub Pages (used for the web app) only serves static files and can't run it.
+Since the database is now external Postgres, this process itself is stateless — any container host works, without needing a persistent disk for the process itself (uploaded files are the exception, see below).
 
-1. Set env vars: `JWT_SECRET` (long random string), `CORS_ORIGIN` (comma-separated list including your deployed web app's origin, e.g. `https://khurshidbekurazaliev.github.io`), `PORT` if the host requires a specific one.
-2. Either pull the image `cd-backend-image.yml` publishes to GHCR, or build and start directly: `npm install && npm run build && npm start`.
-3. Mount a persistent volume at `DB_PATH`'s directory and `UPLOADS_DIR` (defaults: `/app/data`, `/app/uploads` in the Docker image) — an ephemeral filesystem (some free tiers) will wipe them on redeploy/restart.
-4. Rebuild the web app pointing at the deployed API: `EXPO_PUBLIC_API_URL=https://your-api-host.example.com/api npm run build:web` (or set the `API_URL` repository variable so `cd-pages.yml` does it automatically).
+1. Provision Postgres: [Neon](https://neon.tech) or [Supabase](https://supabase.com) free tier both work.
+2. Set env vars: `JWT_SECRET` (long random string), `DATABASE_URL` (from step 1), `CORS_ORIGIN` (comma-separated list including your deployed web app's origin, e.g. `https://khurshidbekurazaliev.github.io`), `PORT` if the host requires a specific one.
+3. Either pull the image `cd-backend-image.yml` publishes to GHCR, or build and start directly: `npm install && npm run build && npm run db:migrate && npm start`.
+4. `uploads/` (avatars, generic file uploads) is still local disk — mount a persistent volume at `UPLOADS_DIR`, or accept that uploaded files are lost on redeploy until this moves to object storage (S3-compatible: Cloudflare R2, Backblaze B2, or AWS S3 all have usable free tiers).
+5. Rebuild the web app pointing at the deployed API: `EXPO_PUBLIC_API_URL=https://your-api-host.example.com/api npm run build:web` (or set the `API_URL` repository variable so `cd-pages.yml` does it automatically).
 
 ## Known limitations
 
 Deliberate scope cuts for a demo/MVP backend — call these out before treating this as production-grade:
 
-- **Storage**: a single JSON file, rewritten wholesale on every write. Fine for a demo; will not scale past light concurrent use and has no transactional guarantees. Swap for Postgres/SQLite + an ORM before real traffic.
-- **No real email**: password-reset tokens are logged to the server console, not emailed. Needs a provider (Postgres + Resend/SES/etc.) wired into `routes/auth.ts`.
+- **File uploads still live on local disk**: avatars and generic uploads are written to `UPLOADS_DIR`, not the database — a host without a persistent volume loses them on every redeploy. Move to S3-compatible object storage before that matters.
+- **No real email**: password-reset tokens are logged to the server console, not emailed. Needs a provider (Resend/SES/etc.) wired into `routes/auth.ts`.
 - **No refresh-token rotation**: `/auth/refresh` reissues a token from a still-valid one; there's no revocation list, so a compromised token remains valid until it expires.
 - **Chat is polling, not real-time**: no WebSocket/SSE push. The frontend has to re-fetch to see new messages.
-- **Single-process**: in-memory JS objects mean no horizontal scaling without moving state into a shared datastore first.
+- **No connection pooler configured**: `postgres.js`'s built-in pool (`max: 10`) is fine for one instance; scaling to multiple instances against a provider with a low connection cap (some free tiers) needs PgBouncer or the provider's own pooled connection string.

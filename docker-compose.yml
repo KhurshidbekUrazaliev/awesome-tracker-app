@@ -7,6 +7,20 @@
 # still GitHub Pages (npm run build:web && npm run deploy:web); see
 # DEPLOYMENT.md and server/README.md.
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=awesome_tracker
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build: ./server
     ports:
@@ -15,9 +29,12 @@ services:
       - PORT=3000
       - JWT_SECRET=${JWT_SECRET:-dev-only-secret-change-me}
       - CORS_ORIGIN=http://localhost:8080,http://localhost:8081
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/awesome_tracker
     volumes:
-      - api-data:/app/data
       - api-uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
@@ -37,5 +54,5 @@ services:
         condition: service_healthy
 
 volumes:
-  api-data:
+  pg-data:
   api-uploads:

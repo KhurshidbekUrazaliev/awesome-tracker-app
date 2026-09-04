@@ -2,11 +2,10 @@ import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 import { randomUUID as uuid } from 'node:crypto';
 import { z } from 'zod';
-import { db, persist } from '../db';
+import { createUser, findUserByEmail, findUserById, toPublicUser, updateUserPassword } from '../db/usersRepo';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 import { signAuthToken, verifyAuthToken } from '../utils/jwt';
-import { toPublicUser } from '../utils/serializers';
 
 const router = Router();
 
@@ -30,23 +29,15 @@ router.post(
     }
     const { name, email, password } = parsed.data;
 
-    if (db.users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
+    if (await findUserByEmail(email)) {
       return res.status(409).json({ message: 'An account with this email already exists' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = {
-      id: uuid(),
-      email,
-      name,
-      passwordHash,
-      createdAt: new Date().toISOString(),
-    };
-    db.users.push(user);
-    persist();
+    const user = await createUser({ id: uuid(), email, name, passwordHash });
 
     const token = signAuthToken(user.id);
-    res.status(201).json({ token, user: toPublicUser(user) });
+    res.status(201).json({ token, user });
   })
 );
 
@@ -59,7 +50,7 @@ router.post(
     }
     const { email, password } = parsed.data;
 
-    const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const user = await findUserByEmail(email);
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -87,7 +78,7 @@ router.post(
   '/forgot-password',
   asyncHandler(async (req, res) => {
     const email = typeof req.body?.email === 'string' ? req.body.email : undefined;
-    const user = email && db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const user = email && (await findUserByEmail(email));
 
     // Always respond 200 so this endpoint can't be used to enumerate accounts.
     if (user) {
@@ -115,13 +106,12 @@ router.post(
       return res.status(400).json({ message: 'Reset link is invalid or has expired' });
     }
 
-    const user = db.users.find((u) => u.id === userId);
+    const user = await findUserById(userId);
     if (!user) {
       return res.status(400).json({ message: 'Reset link is invalid or has expired' });
     }
 
-    user.passwordHash = await bcrypt.hash(password, 10);
-    persist();
+    await updateUserPassword(user.id, await bcrypt.hash(password, 10));
     res.status(200).json({ message: 'Password updated' });
   })
 );

@@ -1,35 +1,44 @@
 import { Router } from 'express';
 import { randomUUID as uuid } from 'node:crypto';
-import { db, persist } from '../db';
+import {
+  conversationExists,
+  createConversation,
+  createMessage,
+  deleteMessage,
+  findMessageById,
+  isParticipant,
+  listConversationsForUser,
+  listMessages,
+  markConversationRead,
+} from '../db/chatRepo';
+import { userExists } from '../db/usersRepo';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { toPublicConversation, toPublicMessage } from '../utils/serializers';
 
 const router = Router();
 router.use(requireAuth);
 
-function findConversationOr404(conversationId: string, userId: string, res: import('express').Response) {
-  const conversation = db.conversations.find((c) => c.id === conversationId);
-  if (!conversation) {
+/** Resolves a conversation for the current user, or writes the appropriate error response. Returns whether the caller should proceed. */
+async function assertMembership(
+  conversationId: string,
+  userId: string,
+  res: import('express').Response
+): Promise<boolean> {
+  if (!(await conversationExists(conversationId))) {
     res.status(404).json({ message: 'Conversation not found' });
-    return null;
+    return false;
   }
-  if (!conversation.participants.includes(userId)) {
+  if (!(await isParticipant(conversationId, userId))) {
     res.status(403).json({ message: 'You are not a participant in this conversation' });
-    return null;
+    return false;
   }
-  return conversation;
+  return true;
 }
 
 router.get(
   '/conversations',
   asyncHandler(async (req, res) => {
-    const userId = req.userId!;
-    const conversations = db.conversations
-      .filter((c) => c.participants.includes(userId))
-      .map((c) => toPublicConversation(c, userId))
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    res.json(conversations);
+    res.json(await listConversationsForUser(req.userId!));
   })
 );
 
@@ -43,22 +52,14 @@ router.post(
     }
 
     const participants = Array.from(new Set([userId, ...(participantIds as string[])]));
-    const unknownParticipant = participants.find((id) => !db.users.some((u) => u.id === id));
-    if (unknownParticipant) {
-      return res.status(400).json({ message: `Unknown user: ${unknownParticipant}` });
+    for (const id of participants) {
+      if (!(await userExists(id))) {
+        return res.status(400).json({ message: `Unknown user: ${id}` });
+      }
     }
 
-    const now = new Date().toISOString();
-    const conversation = {
-      id: uuid(),
-      participants,
-      updatedAt: now,
-      lastReadAt: { [userId]: now },
-    };
-    db.conversations.push(conversation);
-    persist();
-
-    res.status(201).json(toPublicConversation(conversation, userId));
+    const conversation = await createConversation(uuid(), participants);
+    res.status(201).json(conversation);
   })
 );
 
@@ -66,14 +67,8 @@ router.get(
   '/conversations/:id/messages',
   asyncHandler(async (req, res) => {
     const userId = req.userId!;
-    const conversation = findConversationOr404(req.params.id, userId, res);
-    if (!conversation) return;
-
-    const messages = db.messages
-      .filter((m) => m.conversationId === conversation.id)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .map((m) => toPublicMessage(m, userId));
-    res.json(messages);
+    if (!(await assertMembership(req.params.id, userId, res))) return;
+    res.json(await listMessages(req.params.id, userId));
   })
 );
 
@@ -81,27 +76,15 @@ router.post(
   '/conversations/:id/messages',
   asyncHandler(async (req, res) => {
     const userId = req.userId!;
-    const conversation = findConversationOr404(req.params.id, userId, res);
-    if (!conversation) return;
+    if (!(await assertMembership(req.params.id, userId, res))) return;
 
     const content = typeof req.body?.content === 'string' ? req.body.content.trim() : '';
     if (!content) {
       return res.status(400).json({ message: 'Message content is required' });
     }
 
-    const message = {
-      id: uuid(),
-      conversationId: conversation.id,
-      senderId: userId,
-      content,
-      createdAt: new Date().toISOString(),
-    };
-    db.messages.push(message);
-    conversation.updatedAt = message.createdAt;
-    conversation.lastReadAt[userId] = message.createdAt;
-    persist();
-
-    res.status(201).json(toPublicMessage(message, userId));
+    const message = await createMessage(uuid(), req.params.id, userId, content);
+    res.status(201).json(message);
   })
 );
 
@@ -109,11 +92,9 @@ router.post(
   '/conversations/:id/read',
   asyncHandler(async (req, res) => {
     const userId = req.userId!;
-    const conversation = findConversationOr404(req.params.id, userId, res);
-    if (!conversation) return;
+    if (!(await assertMembership(req.params.id, userId, res))) return;
 
-    conversation.lastReadAt[userId] = new Date().toISOString();
-    persist();
+    await markConversationRead(req.params.id, userId);
     res.status(204).send();
   })
 );
@@ -122,14 +103,13 @@ router.delete(
   '/messages/:id',
   asyncHandler(async (req, res) => {
     const userId = req.userId!;
-    const message = db.messages.find((m) => m.id === req.params.id);
+    const message = await findMessageById(req.params.id);
     if (!message) return res.status(404).json({ message: 'Message not found' });
     if (message.senderId !== userId) {
       return res.status(403).json({ message: 'You can only delete your own messages' });
     }
 
-    db.messages = db.messages.filter((m) => m.id !== message.id);
-    persist();
+    await deleteMessage(message.id);
     res.status(204).send();
   })
 );

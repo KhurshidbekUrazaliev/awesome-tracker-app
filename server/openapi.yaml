@@ -95,7 +95,7 @@ paths:
 
   /ready:
     get:
-      summary: Readiness probe (checks the data store is writable)
+      summary: Readiness probe (checks the database is reachable)
       security: []
       responses:
         '200': { description: Ready }

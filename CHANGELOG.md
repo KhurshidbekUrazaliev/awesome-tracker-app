@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-09-05
+
+### Changed
+- **Replaced the JSON-file data store with Postgres** (Drizzle ORM): normalized relational schema (`users`, `conversations`, `conversation_participants`, `messages`) with foreign keys and `ON DELETE CASCADE`, generated SQL migrations under `server/drizzle/`, migrations now run automatically on container boot. This was the top item in the "Known limitations" list — the JSON file had no transactional guarantees and wouldn't survive concurrent writes.
+- `/api/ready` now checks database connectivity instead of local-disk writability.
+- `docker-compose.yml` gained a `postgres` service; the API container no longer needs its own data volume (only `uploads/` still does).
+- Fixed a connection-string SSL bug caught during testing: the driver was guessing SSL from the hostname (`localhost` vs. not), which would have broken every non-`localhost` non-SSL Postgres — including the API's own `docker-compose` service, addressed by using the standard `sslmode` query parameter on the connection string instead.
+
+Verified end to end against a real Postgres, both via `npm run dev` and the built Docker image: full auth/profile/chat regression suite, plus specifically verifying `ON DELETE CASCADE` behavior (deleting a user removes their conversation memberships and messages, leaves other participants' data intact).
+
 ## [1.1.0] - 2026-09-04
 
 ### Added
@@ -20,6 +30,7 @@ All notable changes to this project are documented here. Format loosely follows 
 - Test tooling was non-functional (missing `jest-expo` preset, a deprecated `jest-native` import); fixed so `npm test` actually runs.
 - `npm run lint` crashed outright on a resolver/peer-dependency conflict; `npm run build:web` failed on missing `expo-router` peer dependencies. Both fixed.
 - `package-lock.json` was never committed, so `npm ci` (used by CI) failed from a clean checkout.
+- The first real CI/CD run surfaced two more bugs no local check had caught: root `tsconfig.json`/`.eslintrc.js` had no exclusion for `server/`, so the frontend's typecheck and lint steps failed trying to resolve the backend's separate dependencies; and `cd-pages.yml` failed to push to the `gh-pages` branch because the default `GITHUB_TOKEN` needs an explicit `contents: write` permission grant. Both fixed and reverified in a clean containerized checkout matching the CI runner exactly.
 
 ## [1.0.0] - 2025 (initial commit)
 - Initial application: Expo Router app with auth, chat, profile, and settings modules.

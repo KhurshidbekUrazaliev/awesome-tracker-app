@@ -50,11 +50,12 @@ Then, in your repository on GitHub:
 
 ## Step 5: Deploy the Backend
 
-The web app is static (GitHub Pages), but `server/` is a stateful Node API and needs a real host — GitHub Pages can't run it. See `server/README.md` for the full guide; in short, deploy `server/` to any Node host (Render, Railway, Fly.io, a VPS) with:
+The web app is static (GitHub Pages), but `server/` is a Node API and needs a real host — GitHub Pages can't run it. It's stateless itself (data lives in Postgres), so it can run on any container/Node host without a persistent disk of its own. See `server/README.md` for the full guide; in short:
 
+- Provision a free Postgres (Neon or Supabase both work) and set `DATABASE_URL` to it
 - `JWT_SECRET` set to a long random string
 - `CORS_ORIGIN` including your GitHub Pages origin (`https://YOUR_USERNAME.github.io`)
-- a persistent disk/volume for `data/` and `uploads/` (an ephemeral filesystem loses them on redeploy)
+- a persistent disk/volume for `uploads/` only, if your host supports one — otherwise uploaded avatars/files are lost on redeploy until that moves to object storage (see `server/README.md`)
 
 ## Step 6: Configure Environment Variables
 
