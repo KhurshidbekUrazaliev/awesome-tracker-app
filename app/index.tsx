@@ -4,7 +4,34 @@ import { Link } from 'expo-router';
 import { useUserStore } from '@/store/useUserStore';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import Avatar from '@/components/Avatar';
-import Button from '@/components/Button';
+
+const Button = ({
+  title,
+  fullWidth,
+  variant,
+  onPress,
+  className,
+}: {
+  title: string;
+  fullWidth?: boolean;
+  variant?: 'outline' | 'danger';
+  onPress?: () => void;
+  className?: string;
+}) => {
+  const baseClasses = `${fullWidth ? 'w-full' : ''} p-3 rounded-lg ${className ?? ''}`;
+  const styleClasses =
+    variant === 'outline'
+      ? 'bg-white border border-gray-300'
+      : variant === 'danger'
+      ? 'bg-red-500'
+      : 'bg-blue-600';
+
+  return (
+    <TouchableOpacity onPress={onPress} className={`${baseClasses} ${styleClasses}`}>
+      <Text className="text-white text-center font-medium">{title}</Text>
+    </TouchableOpacity>
+  );
+};
 
 export default function HomeScreen() {
   const { user, isAuthenticated } = useUserStore();

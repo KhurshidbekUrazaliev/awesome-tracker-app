@@ -29,7 +29,7 @@ export default function ConversationScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <MessageBubble message={item} />}
-            contentContainerClassName="px-4 py-4"
+            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}
             inverted={false}
           />
         )}

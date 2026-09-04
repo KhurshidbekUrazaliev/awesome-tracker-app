@@ -39,9 +39,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ]
   ],
   scheme: 'awesomeproject',
+  experiments: {
+    baseUrl: '/awesome-tracker-app'
+  },
   extra: {
     router: {
-      origin: false
+      origin: 'https://KhurshidbekUrazaliev.github.io/awesome-tracker-app'
     }
   }
 });

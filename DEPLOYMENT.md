@@ -5,7 +5,6 @@
 - Node.js 18+ installed
 - Git installed
 - GitHub account
-- Vercel account (sign up at https://vercel.com)
 
 ## Step 1: Initialize Git Repository
 
@@ -32,58 +31,38 @@ git branch -M main
 git push -u origin main
 ```
 
-## Step 4: Deploy to Vercel
-
-### Option A: Using Vercel CLI (Recommended)
+## Step 4: Deploy to GitHub Pages
 
 ```bash
-# Install Vercel CLI globally
-npm install -g vercel
+# Build the web app (baked with the GitHub Pages public URL)
+npm run build:web
 
-# Login to Vercel
-vercel login
-
-# Deploy
-cd AwesomeProject
-vercel
-
-# Follow the prompts:
-# - Set up and deploy? Yes
-# - Which scope? Select your account
-# - Link to existing project? No
-# - What's your project's name? awesome-tracker-app
-# - In which directory is your code located? ./
-# - Want to override settings? No
-
-# Deploy to production
-vercel --prod
+# Publish the dist/ folder to the gh-pages branch
+npm run deploy:web
 ```
 
-### Option B: Using Vercel Dashboard
+Then, in your repository on GitHub:
 
-1. Go to https://vercel.com/new
-2. Click "Import Git Repository"
-3. Select your GitHub repository
-4. Click "Import"
-5. Vercel will auto-detect settings from `vercel.json`
-6. Click "Deploy"
+1. Go to Settings → Pages
+2. Under "Build and deployment", set Source to "Deploy from a branch"
+3. Select the `gh-pages` branch, `/ (root)` folder
+4. Save — your app will be live at `https://YOUR_USERNAME.github.io/awesome-tracker-app`
 
-## Step 5: Configure Environment Variables in Vercel
+## Step 5: Configure Environment Variables
 
-1. Go to your project in Vercel Dashboard
-2. Click "Settings" → "Environment Variables"
-3. Add your environment variables:
-   - `API_URL`: Your backend API URL
-   - `WS_URL`: Your WebSocket URL
-   - `ENVIRONMENT`: production
+Client-side environment variables must be prefixed with `EXPO_PUBLIC_` (see `.env.example`) and are baked into the build at build time — set them before running `npm run build:web`:
+
+```bash
+EXPO_PUBLIC_API_URL=https://your-api.example.com/api npm run build:web
+```
 
 ## Step 6: Test Your Deployment
 
-Your app will be live at: `https://your-project-name.vercel.app`
+Your app will be live at: `https://YOUR_USERNAME.github.io/awesome-tracker-app`
 
 ## Continuous Deployment
 
-Every push to the `main` branch will automatically trigger a new deployment on Vercel.
+Re-run `npm run build:web && npm run deploy:web` (or wire these into a GitHub Actions workflow) whenever you want to publish a new build to `main`.
 
 ## Mobile App Deployment
 
@@ -118,10 +97,10 @@ eas build:configure
 
 ## Troubleshooting
 
-### Build Fails on Vercel
+### Build Fails
 - Check that all dependencies are in `package.json`
 - Ensure `node` version is compatible
-- Check Vercel build logs
+- Check the `npm run build:web` output for errors
 
 ### Environment Variables Not Working
 - Make sure they're prefixed with `EXPO_PUBLIC_` for client-side access
@@ -136,5 +115,5 @@ eas build:configure
 
 For issues, check:
 - [Expo Documentation](https://docs.expo.dev)
-- [Vercel Documentation](https://vercel.com/docs)
+- [GitHub Pages Documentation](https://docs.github.com/en/pages)
 - Project GitHub Issues
