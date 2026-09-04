@@ -1,6 +1,8 @@
 # Backend API
 
-An Express + TypeScript API implementing exactly what the app's `services/*.ts` clients expect: JWT auth, profile/avatar management, and chat. Data is persisted to Postgres via [Drizzle ORM](https://orm.drizzle.team) — schema in `src/db/schema.ts`, migrations in `drizzle/`.
+An Express + TypeScript API implementing exactly what the app's `services/*.ts` clients expect: JWT auth, profile/avatar management, and chat. Data is persisted to Postgres via [Drizzle ORM](https://orm.drizzle.team) — schema in `src/db/schema.ts`, migrations in `drizzle/`. File uploads go to Supabase Storage.
+
+Requires **Node 22+** (set by `@supabase/storage-js`; the Dockerfile and CI are both already pinned to it).
 
 Full endpoint reference: [`openapi.yaml`](./openapi.yaml) (open it at [editor.swagger.io](https://editor.swagger.io) for an interactive view, or `npx @redocly/cli preview-docs openapi.yaml`).
 
@@ -9,7 +11,7 @@ Full endpoint reference: [`openapi.yaml`](./openapi.yaml) (open it at [editor.sw
 ```bash
 cd server
 npm install
-cp .env.example .env      # edit JWT_SECRET, CORS_ORIGIN, DATABASE_URL as needed
+cp .env.example .env      # edit JWT_SECRET, CORS_ORIGIN, DATABASE_URL, SUPABASE_* as needed
 docker compose -f ../docker-compose.yml up postgres -d   # or point DATABASE_URL at any Postgres
 npm run db:migrate
 npm run dev                # http://localhost:3000, structured logs pretty-printed
@@ -27,6 +29,12 @@ EXPO_PUBLIC_API_URL=http://localhost:3000/api npm start
 
 [Neon](https://neon.tech) and [Supabase](https://supabase.com) both have a genuinely free tier (no card required) — either works as `DATABASE_URL`. Their connection strings already include `?sslmode=require`; the driver reads that directly from the URL, no extra config needed.
 
+### File storage (Supabase Storage)
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (from your Supabase project's Settings → API) enable avatar and generic file uploads. **Use the `service_role` key, not `anon`** — this runs server-side only and is never exposed to clients. Without these set, `/api/users/me/avatar` and `/api/upload` fail with a clear error (logged in full server-side; the client just sees a generic 500) instead of writing anywhere — there's no silent local-disk fallback.
+
+One-time setup in the Supabase dashboard: Storage → New bucket → name it `uploads` (or whatever you set `SUPABASE_STORAGE_BUCKET` to) → **make it public** (avatars/files need to be viewable via a plain URL, same as the app expects).
+
 ### Schema changes
 
 Edit `src/db/schema.ts`, then:
@@ -43,7 +51,12 @@ Commit the generated `drizzle/*.sql` file — it's the source of truth for what 
 ```bash
 cd server
 docker build -t awesome-tracker-api .
-docker run -p 3000:3000 -e JWT_SECRET=dev-secret -e DATABASE_URL=postgres://... awesome-tracker-api
+docker run -p 3000:3000 \
+  -e JWT_SECRET=dev-secret \
+  -e DATABASE_URL=postgres://... \
+  -e SUPABASE_URL=https://your-project.supabase.co \
+  -e SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
+  awesome-tracker-api
 ```
 
 Or bring up the whole stack (Postgres + API + web, built for local self-hosting) from the repo root:
@@ -70,9 +83,9 @@ The container runs pending migrations automatically on start (`dist/db/migrate.j
 | GET | `/api/users/me` | ✓ | |
 | GET | `/api/users/:id` | ✓ | |
 | PATCH | `/api/users/me` | ✓ | `{ name?, avatar? }` |
-| POST | `/api/users/me/avatar` | ✓ | multipart, field `avatar` |
+| POST | `/api/users/me/avatar` | ✓ | multipart, field `avatar` — uploaded to Supabase Storage |
 | DELETE | `/api/users/me` | ✓ | deletes the account |
-| POST | `/api/upload` | ✓ | multipart, field `file` |
+| POST | `/api/upload` | ✓ | multipart, field `file` — uploaded to Supabase Storage |
 | GET | `/api/chat/conversations` | ✓ | |
 | POST | `/api/chat/conversations` | ✓ | `{ participantIds: string[] }` |
 | GET | `/api/chat/conversations/:id/messages` | ✓ | |
@@ -92,6 +105,7 @@ Authenticated routes expect `Authorization: Bearer <token>`.
 - Multi-stage Dockerfile: non-root user, `npm ci --omit=dev` in the runtime layer, built-in `HEALTHCHECK`, migrations applied on boot.
 - Normalized relational schema (users / conversations / conversation_participants / messages) with foreign keys and `ON DELETE CASCADE` — deleting a user cleanly removes their memberships and messages, verified end to end.
 - Zod validation on write endpoints (signup, profile update); every chat/profile mutation checks resource ownership/membership before acting.
+- No local disk state at all now (uploads go to Supabase Storage) — the process itself is fully stateless and safe to run on any host without a persistent volume.
 
 ## CI/CD
 
@@ -101,22 +115,20 @@ Authenticated routes expect `Authorization: Bearer <token>`.
 
 To actually deploy the published image, point any container host (Render, Koyeb, Fly.io, a VPS) at `ghcr.io/<owner>/<repo>/api:latest`. Note: GHCR packages are private by default even in a public repo — make the package public (repo → Packages → api → Package settings) or give your host's puller a `read:packages` token.
 
-## Deploying
+## Deploying (Render + Supabase)
 
-Since the database is now external Postgres, this process itself is stateless — any container host works, without needing a persistent disk for the process itself (uploaded files are the exception, see below).
+Fully stateless now — no persistent disk needed anywhere.
 
-1. Provision Postgres: [Neon](https://neon.tech) or [Supabase](https://supabase.com) free tier both work.
-2. Set env vars: `JWT_SECRET` (long random string), `DATABASE_URL` (from step 1), `CORS_ORIGIN` (comma-separated list including your deployed web app's origin, e.g. `https://khurshidbekurazaliev.github.io`), `PORT` if the host requires a specific one.
-3. Either pull the image `cd-backend-image.yml` publishes to GHCR, or build and start directly: `npm install && npm run build && npm run db:migrate && npm start`.
-4. `uploads/` (avatars, generic file uploads) is still local disk — mount a persistent volume at `UPLOADS_DIR`, or accept that uploaded files are lost on redeploy until this moves to object storage (S3-compatible: Cloudflare R2, Backblaze B2, or AWS S3 all have usable free tiers).
-5. Rebuild the web app pointing at the deployed API: `EXPO_PUBLIC_API_URL=https://your-api-host.example.com/api npm run build:web` (or set the `API_URL` repository variable so `cd-pages.yml` does it automatically).
+1. **Supabase**: create a project (free tier), then grab from Settings → API: the Postgres connection string (Settings → Database → Connection string → "Transaction" pooler mode, which already includes `?sslmode=require`), `SUPABASE_URL`, and the `service_role` key. Create a public Storage bucket named `uploads`.
+2. **Render**: New → Web Service → Existing Image → `ghcr.io/<owner>/<repo>/api:latest`. Set env vars: `JWT_SECRET` (long random string), `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGIN` (your GitHub Pages origin, e.g. `https://khurshidbekurazaliev.github.io`). Render sets `PORT` itself — the app already reads it.
+3. Once live, note the Render URL, then rebuild the web app pointing at it: `EXPO_PUBLIC_API_URL=https://your-service.onrender.com/api npm run build:web` (or set the `API_URL` repository variable so `cd-pages.yml` does it automatically on the next push).
 
 ## Known limitations
 
 Deliberate scope cuts for a demo/MVP backend — call these out before treating this as production-grade:
 
-- **File uploads still live on local disk**: avatars and generic uploads are written to `UPLOADS_DIR`, not the database — a host without a persistent volume loses them on every redeploy. Move to S3-compatible object storage before that matters.
 - **No real email**: password-reset tokens are logged to the server console, not emailed. Needs a provider (Resend/SES/etc.) wired into `routes/auth.ts`.
 - **No refresh-token rotation**: `/auth/refresh` reissues a token from a still-valid one; there's no revocation list, so a compromised token remains valid until it expires.
 - **Chat is polling, not real-time**: no WebSocket/SSE push. The frontend has to re-fetch to see new messages.
-- **No connection pooler configured**: `postgres.js`'s built-in pool (`max: 10`) is fine for one instance; scaling to multiple instances against a provider with a low connection cap (some free tiers) needs PgBouncer or the provider's own pooled connection string.
+- **No connection pooler configured on the app side**: `postgres.js`'s built-in pool (`max: 10`) is fine for one instance; scaling to multiple instances against a low-connection-cap free tier needs the provider's pooled connection string (Supabase's "Transaction" mode pooler, noted above, already handles this) or PgBouncer.
+- **Supabase free-tier project auto-pause**: a Supabase free project pauses after about a week with no activity and needs a manual restore from the dashboard. Fine for active development; worth knowing before assuming "deployed" means "always reachable" with zero traffic.

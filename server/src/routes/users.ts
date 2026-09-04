@@ -6,19 +6,13 @@ import { z } from 'zod';
 import { deleteUser, findUserById, toPublicUser, updateUserProfile } from '../db/usersRepo';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { UPLOADS_DIR } from '../utils/paths';
+import { uploadToStorage } from '../storage';
 
 const router = Router();
 router.use(requireAuth);
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOADS_DIR,
-    filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname) || '.jpg';
-      cb(null, `${uuid()}${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
 });
 
@@ -69,7 +63,13 @@ router.post(
   asyncHandler(async (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'No avatar file uploaded' });
 
-    const avatarUrl = `/uploads/${req.file.filename}`;
+    const ext = path.extname(req.file.originalname) || '.jpg';
+    const avatarUrl = await uploadToStorage(
+      `avatars/${req.userId}/${uuid()}${ext}`,
+      req.file.buffer,
+      req.file.mimetype
+    );
+
     const user = await updateUserProfile(req.userId!, { avatar: avatarUrl });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ avatar: avatarUrl });

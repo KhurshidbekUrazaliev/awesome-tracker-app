@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-09-05
+
+### Changed
+- **File uploads moved to Supabase Storage**, replacing local disk (`UPLOADS_DIR`). Avatar and generic uploads (`multer.memoryStorage()`) now stream to a Supabase bucket via `src/storage.ts` and return its public URL; the `/uploads` static route, `paths.ts`, and the `uploads/` directory are gone entirely. The backend is now fully stateless — no persistent disk needed anywhere, on any host.
+- **Bumped to Node 22** (Dockerfile, `ci.yml` backend job, `@types/node`) — `@supabase/storage-js` requires it. Verified: clean typecheck, clean Docker build, full regression suite against the Node 22 image.
+- Deploy target settled: **Supabase** (Postgres + Storage) + **Render** (runs the published GHCR image). `server/README.md` has the concrete step-by-step.
+
+Verified: uploads fail with a clear server-logged error (not a crash, generic 500 to the client) when Supabase Storage isn't configured — confirmed the server stays healthy and keeps serving other requests afterward.
+
 ## [1.2.0] - 2026-09-05
 
 ### Changed

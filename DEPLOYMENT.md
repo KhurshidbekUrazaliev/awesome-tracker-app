@@ -50,12 +50,12 @@ Then, in your repository on GitHub:
 
 ## Step 5: Deploy the Backend
 
-The web app is static (GitHub Pages), but `server/` is a Node API and needs a real host — GitHub Pages can't run it. It's stateless itself (data lives in Postgres), so it can run on any container/Node host without a persistent disk of its own. See `server/README.md` for the full guide; in short:
+The web app is static (GitHub Pages), but `server/` is a Node API and needs a real host — GitHub Pages can't run it. It's fully stateless (data in Postgres, uploads in Supabase Storage), so it needs no persistent disk anywhere. Recommended pairing: Supabase (database + file storage) + Render (runs the container). See `server/README.md` for the full guide; in short:
 
-- Provision a free Postgres (Neon or Supabase both work) and set `DATABASE_URL` to it
+- Supabase project: `DATABASE_URL` (pooled connection string), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, plus a public `uploads` Storage bucket
 - `JWT_SECRET` set to a long random string
 - `CORS_ORIGIN` including your GitHub Pages origin (`https://YOUR_USERNAME.github.io`)
-- a persistent disk/volume for `uploads/` only, if your host supports one — otherwise uploaded avatars/files are lost on redeploy until that moves to object storage (see `server/README.md`)
+- Render (or any host): point it at `ghcr.io/<owner>/<repo>/api:latest`, set the env vars above
 
 ## Step 6: Configure Environment Variables
 

@@ -10,7 +10,6 @@ import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
 import uploadRoutes from './routes/upload';
 import userRoutes from './routes/users';
-import { UPLOADS_DIR } from './utils/paths';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -41,7 +40,6 @@ app.use(
   })
 );
 app.use(express.json({ limit: '1mb' }));
-app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Auth endpoints are the highest-value brute-force target; rate-limit them specifically.
 const authLimiter = rateLimit({

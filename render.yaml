@@ -1,0 +1,28 @@
+# Render Blueprint for the API — a shortcut, not verified against a live
+# Render account. If "New -> Blueprint" doesn't pick this up cleanly,
+# fall back to the manual path in server/README.md's "Deploying" section
+# (New -> Web Service -> Existing Image), which is the reliable one.
+#
+# Secrets (JWT_SECRET, DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+# are intentionally left for you to fill in via the Render dashboard rather
+# than committed here.
+services:
+  - type: web
+    name: awesome-tracker-api
+    runtime: image
+    image:
+      url: ghcr.io/khurshidbekurazaliev/awesome-tracker-app/api:latest
+    envVars:
+      - key: JWT_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: uploads
+      - key: CORS_ORIGIN
+        value: https://khurshidbekurazaliev.github.io
+    healthCheckPath: /api/health
