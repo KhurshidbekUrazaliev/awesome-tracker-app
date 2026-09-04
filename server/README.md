@@ -27,7 +27,7 @@ EXPO_PUBLIC_API_URL=http://localhost:3000/api npm start
 
 ### Free Postgres for local/staging use
 
-[Neon](https://neon.tech) and [Supabase](https://supabase.com) both have a genuinely free tier (no card required) — either works as `DATABASE_URL`. Their connection strings already include `?sslmode=require`; the driver reads that directly from the URL, no extra config needed.
+[Neon](https://neon.tech) and [Supabase](https://supabase.com) both have a genuinely free tier (no card required) — either works as `DATABASE_URL`. Both require SSL for external connections; Neon's copied connection string includes `?sslmode=require`, Supabase's doesn't but still requires it. `src/db/client.ts` handles this: an explicit `sslmode` in the URL always wins, otherwise SSL is required automatically whenever `NODE_ENV=production` (set in the Dockerfile) and left off for local/docker-compose dev.
 
 ### File storage (Supabase Storage)
 
@@ -119,7 +119,7 @@ To actually deploy the published image, point any container host (Render, Koyeb,
 
 Fully stateless now — no persistent disk needed anywhere.
 
-1. **Supabase**: create a project (free tier), then grab from Settings → API: the Postgres connection string (Settings → Database → Connection string → "Transaction" pooler mode, which already includes `?sslmode=require`), `SUPABASE_URL`, and the `service_role` key. Create a public Storage bucket named `uploads`.
+1. **Supabase**: create a project (free tier), then grab from Settings → API: the Postgres connection string (Settings → Database → Connection string → "Transaction" pooler mode), `SUPABASE_URL`, and the `service_role` key. Create a public Storage bucket named `uploads`. SSL is required automatically in production (see above) even though Supabase's copied string doesn't include `sslmode` — no manual edit needed.
 2. **Render**: New → Web Service → Existing Image → `ghcr.io/<owner>/<repo>/api:latest`. Set env vars: `JWT_SECRET` (long random string), `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGIN` (your GitHub Pages origin, e.g. `https://khurshidbekurazaliev.github.io`). Render sets `PORT` itself — the app already reads it.
 3. Once live, note the Render URL, then rebuild the web app pointing at it: `EXPO_PUBLIC_API_URL=https://your-service.onrender.com/api npm run build:web` (or set the `API_URL` repository variable so `cd-pages.yml` does it automatically on the next push).
 
