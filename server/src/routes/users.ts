@@ -2,9 +2,11 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { randomUUID as uuid } from 'node:crypto';
+import { z } from 'zod';
 import { db, persist } from '../db';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
+import { UPLOADS_DIR } from '../utils/paths';
 import { toPublicUser } from '../utils/serializers';
 
 const router = Router();
@@ -12,13 +14,18 @@ router.use(requireAuth);
 
 const upload = multer({
   storage: multer.diskStorage({
-    destination: path.join(__dirname, '..', '..', 'uploads'),
+    destination: UPLOADS_DIR,
     filename: (_req, file, cb) => {
       const ext = path.extname(file.originalname) || '.jpg';
       cb(null, `${uuid()}${ext}`);
     },
   }),
   limits: { fileSize: 8 * 1024 * 1024 },
+});
+
+const updateProfileSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  avatar: z.string().max(2048).optional(),
 });
 
 router.get(
@@ -45,9 +52,13 @@ router.patch(
     const user = db.users.find((u) => u.id === req.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const { name, avatar } = req.body ?? {};
-    if (typeof name === 'string' && name.trim()) user.name = name.trim();
-    if (typeof avatar === 'string') user.avatar = avatar;
+    const parsed = updateProfileSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid input' });
+    }
+
+    if (parsed.data.name) user.name = parsed.data.name;
+    if (parsed.data.avatar) user.avatar = parsed.data.avatar;
 
     persist();
     res.json(toPublicUser(user));

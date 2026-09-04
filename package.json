@@ -1,6 +1,6 @@
 {
   "name": "awesome-project",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -11,7 +11,10 @@
     "deploy:web": "gh-pages -d dist",
     "test": "jest --passWithNoTests",
     "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "server:install": "npm --prefix server install",
+    "server:dev": "npm --prefix server run dev",
+    "dev:full": "concurrently -n web,api -c blue,green \"npm:web\" \"npm:server:dev\""
   },
   "jest": {
     "preset": "jest-expo",
@@ -54,6 +57,7 @@
   "devDependencies": {
     "@babel/core": "^7.23.0",
     "@types/node": "~18.19.0",
+    "concurrently": "^9.0.1",
     "@types/react": "~18.2.45",
     "@types/react-native": "~0.73.0",
     "typescript": "5.3.3",

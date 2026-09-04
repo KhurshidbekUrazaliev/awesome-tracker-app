@@ -1,0 +1,41 @@
+# Full-stack local preview: `docker compose up --build`
+#   API:  http://localhost:3000
+#   Web:  http://localhost:8080
+#
+# This is for a self-hosted/staging-style preview of the whole product
+# together. It is NOT how the web app is published day-to-day — that's
+# still GitHub Pages (npm run build:web && npm run deploy:web); see
+# DEPLOYMENT.md and server/README.md.
+services:
+  api:
+    build: ./server
+    ports:
+      - '3000:3000'
+    environment:
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET:-dev-only-secret-change-me}
+      - CORS_ORIGIN=http://localhost:8080,http://localhost:8081
+    volumes:
+      - api-data:/app/data
+      - api-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      args:
+        EXPO_PUBLIC_API_URL: http://localhost:3000/api
+        WEB_ORIGIN: http://localhost:8080
+    ports:
+      - '8080:80'
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  api-data:
+  api-uploads:

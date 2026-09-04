@@ -1,11 +1,16 @@
 import cors from 'cors';
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
-import path from 'path';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import pinoHttp from 'pino-http';
+import { isDbWritable } from './db';
+import { logger } from './logger';
 import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
 import uploadRoutes from './routes/upload';
 import userRoutes from './routes/users';
+import { UPLOADS_DIR } from './utils/paths';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -14,6 +19,10 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:8081')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
+app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -25,10 +34,44 @@ app.use(
     },
   })
 );
-app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use(
+  pinoHttp({
+    logger,
+    autoLogging: { ignore: (req) => req.url === '/api/health' },
+  })
+);
+app.use(express.json({ limit: '1mb' }));
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+// Auth endpoints are the highest-value brute-force target; rate-limit them specifically.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many attempts, please try again later.' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/signup', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+
+// A generous baseline limit for everything else, mainly to blunt accidental retry storms.
+app.use(
+  rateLimit({
+    windowMs: 60 * 1000,
+    limit: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+app.get('/api/ready', (_req, res) => {
+  if (!isDbWritable()) {
+    return res.status(503).json({ status: 'not ready', reason: 'data store is not writable' });
+  }
+  res.json({ status: 'ready' });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -40,11 +83,23 @@ app.use((_req, res) => {
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  req.log?.error({ err }, 'Unhandled request error');
   res.status(500).json({ message: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`API server listening on http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  logger.info(`API server listening on http://localhost:${PORT}`);
 });
+
+function shutdown(signal: string) {
+  logger.info(`${signal} received, shutting down gracefully`);
+  server.close(() => {
+    logger.info('Server closed');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

@@ -3,13 +3,14 @@ import multer from 'multer';
 import path from 'path';
 import { randomUUID as uuid } from 'node:crypto';
 import { requireAuth } from '../middleware/auth';
+import { UPLOADS_DIR } from '../utils/paths';
 
 const router = Router();
 router.use(requireAuth);
 
 const upload = multer({
   storage: multer.diskStorage({
-    destination: path.join(__dirname, '..', '..', 'uploads'),
+    destination: UPLOADS_DIR,
     filename: (_req, file, cb) => {
       const ext = path.extname(file.originalname) || '';
       cb(null, `${uuid()}${ext}`);

@@ -1,0 +1,55 @@
+name: Deploy web app to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - 'modules/**'
+      - 'hooks/**'
+      - 'store/**'
+      - 'services/**'
+      - 'utils/**'
+      - 'localization/**'
+      - 'app.config.ts'
+      - 'babel.config.js'
+      - 'tailwind.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/cd-pages.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web bundle
+        # EXPO_PUBLIC_API_URL: set an "API_URL" repository variable
+        # (Settings -> Secrets and variables -> Actions -> Variables)
+        # once a backend is deployed publicly. Until then this falls
+        # back to localhost, same as a local build with no override.
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.API_URL }}
+        run: npm run build:web
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist

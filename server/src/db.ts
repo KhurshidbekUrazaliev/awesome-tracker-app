@@ -32,7 +32,7 @@ interface DbShape {
   messages: MessageRecord[];
 }
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'db.json');
 
 function loadDb(): DbShape {
   if (!fs.existsSync(DB_PATH)) {
@@ -49,4 +49,14 @@ function persist() {
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
 
-export { db, persist };
+function isDbWritable(): boolean {
+  try {
+    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+    fs.accessSync(path.dirname(DB_PATH), fs.constants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export { db, persist, isDbWritable };

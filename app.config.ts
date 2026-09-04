@@ -40,11 +40,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
   scheme: 'awesomeproject',
   experiments: {
-    baseUrl: '/awesome-tracker-app'
+    // GitHub Pages serves this app from a /awesome-tracker-app subpath; other
+    // hosts (e.g. a Docker/nginx deployment serving from the domain root)
+    // should build with WEB_BASE_PATH='' to disable the prefix.
+    baseUrl: process.env.WEB_BASE_PATH ?? '/awesome-tracker-app'
   },
   extra: {
     router: {
-      origin: 'https://KhurshidbekUrazaliev.github.io/awesome-tracker-app'
+      origin: process.env.WEB_ORIGIN || 'https://KhurshidbekUrazaliev.github.io/awesome-tracker-app'
     }
   }
 });
