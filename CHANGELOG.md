@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.10.0] - 2026-09-06
+
+### Added
+- **Search relevance ranking and trending categories** (Stage 7's last remaining "not started" item). Search now also matches `tags`, not just title/description. When a query is present, results are ranked by relevance (title match > tag match > description-only match) before falling back to recency; a plain browse keeps the existing newest-first order. New `GET /api/listings/trending-categories` (top categories by open-listing count) surfaces as tappable quick-filter chips on the browse feed. Query-only backend change, no migration.
+
+### Fixed
+- **Missing peer dependencies crashed the app outside the Metro dev environment.** `expo-doctor` flagged `expo-font` (required by `@expo/vector-icons`) and `react-native-worklets` (required by Reanimated 4, which split its native engine into a separate package since SDK 57) as missing. Installed both and registered the `expo-font` config plugin.
+- **`expo-notifications` crashed on import in Expo Go (Android).** One of its internal modules registers a device-push-token listener as a top-level side effect — exactly what SDK 53 disallowed in Expo Go — so the crash happened at `import` time, before any in-app guard could run. `notificationService.ts` now does a genuinely conditional `require()` of the module, only outside Expo Go; every notification method degrades to a no-op/null inside it. `useNotifications.ts`'s type-only `import * as Notifications` was switched to `import type` for the same reason — an unused namespace import isn't reliably elided by Babel and was loading the module regardless.
+- **GitHub Pages 404'd on any nested route** (a direct link, a refresh, a shared URL, or an occasional click racing ahead of hydration) — this is a single-page web export, so only `index.html` exists as a physical file. The Pages deploy now also copies it to `404.html`; GitHub Pages serves that for any unmatched path, letting the app's own router take over for whatever URL is already in the address bar.
+- **The landing page's "Get Started"/"Sign In" buttons could fail to navigate on web.** `Button.tsx` wasn't wrapped in `React.forwardRef`, which `expo-router`'s `<Link asChild>` needs to reliably attach its merged href/onClick props to the child's underlying element. Every other `Link asChild` in the app wraps a plain `TouchableOpacity`, which already forwards refs correctly as a built-in RN component, so this only affected those two buttons.
+
 ## [2.9.0] - 2026-09-06
 
 ### Added
