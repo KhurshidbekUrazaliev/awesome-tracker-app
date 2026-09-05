@@ -1,6 +1,6 @@
 # Product Plan: TrY — A Trust-First Sharing Platform
 
-**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 and 6 built, Stage 7 partially built (admin moderation tooling, push notifications). Stages 4–5 (rentals, auctions) remain blocked on a payment-provider decision.
+**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 and 6 built (including the full home-screen takeover), Stage 7 partially built (admin moderation tooling, push notifications). Stages 4–5 (rentals, auctions) remain blocked on a payment-provider decision.
 **Purpose of this document:** A complete, standalone specification of the product so that any engineer or AI assistant picking this up — with zero prior context — can continue the build without re-deriving the vision from scratch.
 
 ---
@@ -96,7 +96,7 @@ Each stage should be fully working, tested, and deployed before starting the nex
 - Basic interaction flow: express interest / propose a trade → owner accepts → mark completed — `app/listings/detail.tsx`.
 - Basic star rating + review (`server/src/routes/reviews.ts`, `server/src/db/reviewsRepo.ts`), shown on the listing detail screen once completed.
 - **Explicitly out of scope for Stage 1 (not built yet):** trial, rental, auction, payments, verification badges, personal Rooms.
-- **Not yet done:** the home screen still shows the old "Quick Actions" tile layout with a "Browse & Share" entry point, rather than fully becoming the browse feed itself (see §7 "Remove / repurpose"). Full home-screen takeover is left for a later polish pass.
+- ✅ **Home screen takeover done**: `app/index.tsx`'s signed-in view now embeds the browse feed directly (`modules/listings/components/ListingsFeed.tsx`, shared with the standalone `/listings` screen) behind a compact photo-hero header — brand, Messages/My Space/Settings/theme-toggle icons, and an avatar+greeting that links to Profile. "Log out" moved to the Settings screen. This was the one "not yet done" item called out below at the time Stage 1 shipped.
 
 ### Stage 2 — Trust & safety deepening — ✅ Built
 - Reputation summary on profiles (average rating + review count) — `server/src/routes/reviews.ts` (already built in Stage 1), `app/profile/index.tsx`, `modules/listings/hooks/useReputation.ts`.

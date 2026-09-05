@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import React from 'react';
-import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Avatar from '@/components/Avatar';
 import Button from '@/components/Button';
 import { useTheme } from '@/hooks/useTheme';
-import { useAuth } from '@/modules/auth/hooks/useAuth';
+import ListingsFeed from '@/modules/listings/components/ListingsFeed';
 import { useUserStore } from '@/store/useUserStore';
 
 // One photo set, four distinct roles — nothing repeats across the app so
@@ -111,7 +111,6 @@ function FloatingPhoto({
 
 export default function HomeScreen() {
   const { user, isAuthenticated } = useUserStore();
-  const { logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
   const scrim = isDark ? HERO_SCRIM.dark : HERO_SCRIM.light;
@@ -221,10 +220,12 @@ export default function HomeScreen() {
     );
   }
 
+  // The home screen for a signed-in user IS the browse feed — everything
+  // else (messages, personal space, profile, settings) is one tap away from
+  // the compact header, not the main event. See docs/PRODUCT_PLAN.md §7.
   return (
     <View className="flex-1 bg-gray-50 dark:bg-navy-950">
-      {/* Hero banner */}
-      <View style={{ height: 240 }}>
+      <View style={{ height: 128 }}>
         <Image source={HERO_IMAGES.banner} style={IMAGE_FILL} resizeMode="cover" />
         <LinearGradient
           colors={scrim}
@@ -236,104 +237,40 @@ export default function HomeScreen() {
 
         <View
           className="flex-row items-center justify-between px-6"
-          style={{ paddingTop: insets.top + 12 }}
+          style={{ paddingTop: insets.top + 10 }}
         >
-          <View className="flex-row items-center">
-            <View className="w-8 h-8 rounded-full bg-primary-600 dark:bg-primary-500 items-center justify-center mr-2">
-              <Ionicons name="pulse" size={16} color="#ffffff" />
-            </View>
-            <Text
-              className="font-bold text-sm tracking-wide"
-              style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
-            >
-              TrY
-            </Text>
+          <Text
+            className="font-bold text-sm tracking-wide"
+            style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
+          >
+            TrY
+          </Text>
+          <View className="flex-row" style={{ gap: 8 }}>
+            <GlassIconButton icon="chatbubble-outline" onPress={() => router.push('/chat')} accessibilityLabel="Messages" />
+            <GlassIconButton icon="albums-outline" onPress={() => router.push('/rooms')} accessibilityLabel="My Space" />
+            <GlassIconButton icon="settings-outline" onPress={() => router.push('/settings')} accessibilityLabel="Settings" />
+            <GlassIconButton
+              icon={isDark ? 'sunny-outline' : 'moon-outline'}
+              onPress={toggleTheme}
+              accessibilityLabel="Toggle dark mode"
+            />
           </View>
-          <GlassIconButton
-            icon={isDark ? 'sunny-outline' : 'moon-outline'}
-            onPress={toggleTheme}
-            accessibilityLabel="Toggle dark mode"
-          />
         </View>
 
-        <View className="flex-1 justify-end px-6 pb-6">
-          <View className="flex-row items-center">
-            <View
-              className="rounded-full border-2"
-              style={{
-                borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(17,22,42,0.12)',
-                shadowColor: '#000',
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 4 },
-                elevation: 6,
-              }}
+        <View className="flex-1 justify-end px-6 pb-4">
+          <TouchableOpacity onPress={() => router.push('/profile')} className="flex-row items-center self-start">
+            <Avatar uri={user.avatar} name={user.name} size="sm" />
+            <Text
+              className="ml-2 font-semibold text-sm"
+              style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
             >
-              <Avatar uri={user.avatar} name={user.name} size="lg" />
-            </View>
-            <View className="ml-4">
-              <Text className="text-navy-700 dark:text-white/70 text-xs font-semibold tracking-wide mb-0.5">
-                WELCOME BACK
-              </Text>
-              <Text className="text-2xl font-extrabold text-gray-900 dark:text-white">{user.name}</Text>
-              <Text className="text-sm text-gray-500 dark:text-white/60">{user.email}</Text>
-            </View>
-          </View>
+              Hi, {user.name.split(' ')[0]}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView className="flex-1 -mt-5" contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
-        <View
-          className="bg-white dark:bg-navy-900 rounded-t-3xl px-6 pt-7"
-          style={{ minHeight: 200 }}
-        >
-          <Text className="text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</Text>
-
-          <View className="flex-row mb-3" style={{ gap: 12 }}>
-            <QuickActionTile href="/listings" icon="gift-outline" label="Browse & Share" isDark={isDark} />
-            <QuickActionTile href="/rooms" icon="albums-outline" label="My Space" isDark={isDark} />
-          </View>
-          <View className="flex-row mb-3" style={{ gap: 12 }}>
-            <QuickActionTile href="/chat" icon="chatbubble-outline" label="Messages" isDark={isDark} />
-            <QuickActionTile href="/profile" icon="person-outline" label="Profile" isDark={isDark} />
-          </View>
-          <View className="flex-row" style={{ gap: 12 }}>
-            <QuickActionTile href="/settings" icon="settings-outline" label="Settings" isDark={isDark} />
-            <View style={{ flex: 1 }} />
-          </View>
-
-          <TouchableOpacity onPress={logout} className="mt-10 mb-2 self-center flex-row items-center">
-            <Ionicons name="log-out-outline" size={16} color="#ef4444" />
-            <Text className="text-red-500 font-semibold ml-1.5">Log out</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      <ListingsFeed />
     </View>
-  );
-}
-
-function QuickActionTile({
-  href,
-  icon,
-  label,
-  isDark,
-}: {
-  href: '/listings' | '/rooms' | '/chat' | '/profile' | '/settings';
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  isDark: boolean;
-}) {
-  return (
-    <Link href={href} asChild>
-      <TouchableOpacity
-        className="flex-1 items-center bg-gray-50 dark:bg-navy-800 rounded-2xl py-5"
-        activeOpacity={0.7}
-      >
-        <View className="w-11 h-11 rounded-full bg-primary-100 dark:bg-primary-500/20 items-center justify-center mb-2">
-          <Ionicons name={icon} size={20} color={isDark ? '#a78bfa' : '#7c3aed'} />
-        </View>
-        <Text className="text-xs font-semibold text-gray-800 dark:text-navy-100">{label}</Text>
-      </TouchableOpacity>
-    </Link>
   );
 }

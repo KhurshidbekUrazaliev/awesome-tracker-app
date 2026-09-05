@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.7.0] - 2026-09-05
+
+### Changed
+- **The signed-in home screen is now the browse feed**, not a link to it. Closes out the one "not yet done" item flagged when Stage 1 shipped (`docs/PRODUCT_PLAN.md` §7: "the new home screen becomes the sharing/browse feed").
+  - Extracted the browse/search/create UI from `app/listings/index.tsx` into a shared `modules/listings/components/ListingsFeed.tsx`, used by both the standalone `/listings` screen and the home screen.
+  - `app/index.tsx`'s signed-in view: replaced the big hero + "Quick Actions" tile grid with a compact 128px photo-hero header (brand, Messages/My Space/Settings/theme-toggle icon buttons, avatar+greeting linking to Profile) directly above the feed.
+  - Moved "Log out" from the home screen into `app/settings/index.tsx`, where it fits better now that home no longer has room for it.
+  - Verified: clean typecheck/lint/test, and a visual pass on both themes plus the standalone `/listings` screen and the new Settings logout button.
+
 ## [2.6.0] - 2026-09-05
 
 ### Fixed

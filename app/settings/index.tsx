@@ -1,8 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
+import { useAuth } from '@/modules/auth/hooks/useAuth';
 
 export default function SettingsScreen() {
+  const { logout } = useAuth();
+
   return (
     <ScrollView className="flex-1 bg-gray-50 dark:bg-navy-950">
       <View className="px-6 py-4">
@@ -30,6 +34,11 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </Link>
         </View>
+
+        <TouchableOpacity onPress={logout} className="mt-8 mb-2 self-center flex-row items-center">
+          <Ionicons name="log-out-outline" size={16} color="#ef4444" />
+          <Text className="text-red-500 font-semibold ml-1.5">Log out</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
