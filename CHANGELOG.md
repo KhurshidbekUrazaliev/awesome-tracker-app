@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.0] - 2026-09-05
+
+### Added
+- **Redesigned home screen** (`app/index.tsx`), both signed-out and signed-in states, as a full-bleed hero: a navy→violet diagonal gradient (`expo-linear-gradient`), soft layered glow orbs for depth, a floating glass icon button (`expo-blur`) for the theme toggle, and a large low-opacity brand-mark watermark filling the hero so it reads as designed rather than empty.
+  - Signed-out: an overlay card (eyebrow tag, headline, subcopy, Get Started/Sign In) with a "Secure" seal badge overlapping its top-right corner.
+  - Signed-in: a gradient banner (avatar + greeting) flowing into a lifted content card with three icon-tile Quick Actions (real `@expo/vector-icons` glyphs in colored badges, replacing the old plain emoji-prefixed rows) and a lower-weight text-link Log out instead of a full-width danger button.
+  - `app/_layout.tsx`: hid the native Stack header for `index` so the hero runs fully edge-to-edge from the very top, using `useSafeAreaInsets` to pad the custom nav row correctly instead.
+  - Along the way: confirmed NativeWind's `className` transform only applies to `react-native`/`react-native-web` components by default (not third-party ones like `BlurView`/`LinearGradient`) — styled those via a plain `View` wrapper instead of relying on a babel allowlist change.
+
 ## [1.4.0] - 2026-09-05
 
 ### Added
