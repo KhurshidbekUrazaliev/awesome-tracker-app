@@ -15,6 +15,13 @@
       "when": 1788610164731,
       "tag": "0001_low_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788611283040,
+      "tag": "0002_smiling_shooting_star",
+      "breakpoints": true
     }
   ]
 }

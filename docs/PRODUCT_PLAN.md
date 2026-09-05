@@ -1,6 +1,6 @@
 # Product Plan: TrY — A Trust-First Sharing Platform
 
-**Status:** Draft v1 — name decided (**TrY**), Stage 1 built.
+**Status:** Draft v1 — name decided (**TrY**), Stages 1–2 built.
 **Purpose of this document:** A complete, standalone specification of the product so that any engineer or AI assistant picking this up — with zero prior context — can continue the build without re-deriving the vision from scratch.
 
 ---
@@ -98,10 +98,11 @@ Each stage should be fully working, tested, and deployed before starting the nex
 - **Explicitly out of scope for Stage 1 (not built yet):** trial, rental, auction, payments, verification badges, personal Rooms.
 - **Not yet done:** the home screen still shows the old "Quick Actions" tile layout with a "Browse & Share" entry point, rather than fully becoming the browse feed itself (see §7 "Remove / repurpose"). Full home-screen takeover is left for a later polish pass.
 
-### Stage 2 — Trust & safety deepening
-- Full reputation summary UI on profiles (category breakdown, badges).
-- Reporting a listing or user (basic moderation queue for admins).
-- Blocking a user.
+### Stage 2 — Trust & safety deepening — ✅ Built
+- Reputation summary on profiles (average rating + review count) — `server/src/routes/reviews.ts` (already built in Stage 1), `app/profile/index.tsx`, `modules/listings/hooks/useReputation.ts`.
+- Reporting a listing or user — `reports` table, `server/src/routes/safety.ts` (`POST /api/safety/reports`). Captures the report only; no admin review UI yet (that's still Stage 7).
+- Blocking a user — `blocks` table, `server/src/routes/safety.ts` (`POST`/`DELETE /api/safety/blocks`). A blocked user's listings are filtered out of the blocker's browse feed (`listListings`'s `excludeOwnerIds`). Manage blocked users at `app/settings/blocked.tsx`; report/block actions live on `app/listings/detail.tsx`.
+- **Not yet done:** full category breakdown on the reputation summary (currently just average + count, not broken down by listing type as originally scoped) and reputation badges. Left for a later polish pass alongside the home-screen takeover noted in Stage 1.
 
 ### Stage 3 — Trial listings
 - New `trial` type: fixed try-period, handoff coordination via chat, "convert to rental" hook (inert until Stage 4 ships).

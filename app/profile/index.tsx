@@ -1,11 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { useUserStore } from '@/store/useUserStore';
+import { useReputation } from '@/modules/listings/hooks/useReputation';
 import Avatar from '@/components/Avatar';
 
 export default function ProfileScreen() {
   const { user } = useUserStore();
+  const { summary } = useReputation(user?.id);
 
   if (!user) return null;
 
@@ -15,6 +18,18 @@ export default function ProfileScreen() {
         <Avatar uri={user.avatar} name={user.name} size="xl" />
         <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4">{user.name}</Text>
         <Text className="text-sm text-gray-500 dark:text-navy-300">{user.email}</Text>
+
+        <View className="flex-row items-center mt-3 bg-gray-50 dark:bg-navy-800 px-4 py-2 rounded-full">
+          <Ionicons name="star" size={16} color="#f59e0b" />
+          <Text className="text-sm font-semibold text-gray-800 dark:text-navy-100 ml-1.5">
+            {summary?.averageRating != null ? summary.averageRating.toFixed(1) : 'No ratings yet'}
+          </Text>
+          {summary && summary.totalReviews > 0 && (
+            <Text className="text-sm text-gray-500 dark:text-navy-300 ml-1.5">
+              ({summary.totalReviews} {summary.totalReviews === 1 ? 'review' : 'reviews'})
+            </Text>
+          )}
+        </View>
       </View>
 
       <View className="p-6">

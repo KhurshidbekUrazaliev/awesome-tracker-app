@@ -22,6 +22,13 @@ export default function SettingsScreen() {
               <Text className="text-sm text-gray-500 dark:text-navy-300 mt-1">Two-factor auth and biometrics</Text>
             </TouchableOpacity>
           </Link>
+
+          <Link href="/settings/blocked" asChild>
+            <TouchableOpacity className="bg-white dark:bg-navy-800 p-4 rounded-lg shadow-sm mb-2">
+              <Text className="text-base font-medium text-gray-900 dark:text-white">🚫 Blocked Users</Text>
+              <Text className="text-sm text-gray-500 dark:text-navy-300 mt-1">People you won&apos;t see or hear from</Text>
+            </TouchableOpacity>
+          </Link>
         </View>
       </View>
     </ScrollView>

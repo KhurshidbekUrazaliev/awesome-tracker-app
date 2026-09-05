@@ -120,3 +120,41 @@ export const reviews = pgTable(
   },
   (table) => [index('reviews_reviewee_id_idx').on(table.revieweeId)]
 );
+
+/**
+ * Stage 2 (trust & safety): a user or listing flagged for review. No admin
+ * review UI yet (that's Stage 7, "Admin moderation tooling hardened") — this
+ * just captures the report so it exists to build on.
+ */
+export const reports = pgTable(
+  'reports',
+  {
+    id: text('id').primaryKey(),
+    reporterId: text('reporter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    targetType: text('target_type').notNull(), // 'listing' | 'user'
+    targetId: text('target_id').notNull(),
+    reason: text('reason').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('reports_target_idx').on(table.targetType, table.targetId)]
+);
+
+/** One user blocking another — hides the blocked user's listings from the blocker's browse feed. */
+export const blocks = pgTable(
+  'blocks',
+  {
+    blockerId: text('blocker_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    blockedId: text('blocked_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.blockerId, table.blockedId] }),
+    index('blocks_blocked_id_idx').on(table.blockedId),
+  ]
+);

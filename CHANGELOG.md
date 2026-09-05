@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.2.0] - 2026-09-05
+
+### Added
+- **Stage 2 of the roadmap: trust & safety.**
+  - Reputation summary on profiles (average rating + review count), built on Stage 1's reviews endpoint — `app/profile/index.tsx`, `modules/listings/hooks/useReputation.ts`.
+  - Reporting a listing or user: new `reports` table, `POST /api/safety/reports` (`server/src/routes/safety.ts`). Captures the report only — no admin review UI yet, that's still Stage 7.
+  - Blocking a user: new `blocks` table, `POST`/`DELETE /api/safety/blocks`. A blocked user's listings are filtered out of the blocker's browse feed (`listListings`'s new `excludeOwnerIds`). Manage blocked users at the new `app/settings/blocked.tsx`; report/block actions added to `app/listings/detail.tsx` (non-owner view only).
+  - Migration `0002_smiling_shooting_star.sql`.
+  - Verified: clean typecheck/lint/test across app and server, a real end-to-end pass against production (two test accounts, create/browse/block, cleaned up afterward), and a visual pass on the new Settings entry, Blocked Users screen, and profile reputation badge.
+- Updated `docs/PRODUCT_PLAN.md` (and the published plan artifact) to mark Stages 1–2 built and resolve the "product name" and "repurpose vs. fresh repo" open decisions.
+
 ## [2.1.0] - 2026-09-05
 
 ### Added

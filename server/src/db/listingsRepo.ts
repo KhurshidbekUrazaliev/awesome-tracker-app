@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, desc, eq, ilike, notInArray, or } from 'drizzle-orm';
 import { db } from './client';
 import { listingInterests, listings, users } from './schema';
 import { toPublicUser, type PublicUser } from './usersRepo';
@@ -67,6 +67,8 @@ export interface ListingFilters {
   category?: string;
   q?: string;
   status?: PublicListing['status'];
+  /** Owner ids to exclude — used to hide listings from users the viewer has blocked. */
+  excludeOwnerIds?: string[];
 }
 
 /** Browse/search open listings, newest first, each with its owner attached. */
@@ -77,6 +79,9 @@ export async function listListings(filters: ListingFilters): Promise<PublicListi
   if (filters.q) {
     const like = `%${filters.q}%`;
     conditions.push(or(ilike(listings.title, like), ilike(listings.description, like))!);
+  }
+  if (filters.excludeOwnerIds?.length) {
+    conditions.push(notInArray(listings.ownerId, filters.excludeOwnerIds));
   }
 
   const rows = await db

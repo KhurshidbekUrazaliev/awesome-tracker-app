@@ -17,6 +17,7 @@ import {
   setListingStatus,
   updateListing,
 } from '../db/listingsRepo';
+import { listBlockedIds } from '../db/safetyRepo';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 
@@ -49,7 +50,8 @@ router.get(
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid query' });
     }
-    res.json(await listListings(parsed.data));
+    const excludeOwnerIds = await listBlockedIds(req.userId!);
+    res.json(await listListings({ ...parsed.data, excludeOwnerIds }));
   })
 );
 
