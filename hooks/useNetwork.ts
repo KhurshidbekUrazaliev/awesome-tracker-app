@@ -1,16 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export function useNetwork() {
-  const [isConnected, setIsConnected] = useState<boolean>(true);
-  const [connectionType, setConnectionType] = useState<string>('unknown');
-
   // Note: For full implementation, install @react-native-community/netinfo
-  // This is a simplified version
-  useEffect(() => {
-    // Simulate network check
-    setIsConnected(true);
-    setConnectionType('wifi');
-  }, []);
+  // This is a simplified version — simulated as always-on wifi.
+  const [isConnected, setIsConnected] = useState<boolean>(true);
+  const [connectionType, setConnectionType] = useState<string>('wifi');
 
   const refresh = async () => {
     setIsConnected(true);

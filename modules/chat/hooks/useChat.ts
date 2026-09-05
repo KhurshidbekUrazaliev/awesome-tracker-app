@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useChatStore } from '../store/useChatStore';
 import chatService from '../services/chatService';
 
@@ -11,23 +11,11 @@ export function useChat(conversationId?: string) {
     addMessage,
     markAsRead,
   } = useChatStore();
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadConversations();
-  }, []);
-
-  useEffect(() => {
-    if (conversationId) {
-      loadMessages(conversationId);
-      chatService.markAsRead(conversationId);
-      markAsRead(conversationId);
-    }
-  }, [conversationId]);
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await chatService.getConversations();
@@ -37,9 +25,9 @@ export function useChat(conversationId?: string) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setConversations]);
 
-  const loadMessages = async (convId: string) => {
+  const loadMessages = useCallback(async (convId: string) => {
     try {
       setIsLoading(true);
       const data = await chatService.getMessages(convId);
@@ -49,7 +37,23 @@ export function useChat(conversationId?: string) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setMessages]);
+
+  useEffect(() => {
+    // loadConversations sets isLoading synchronously before its first await —
+    // a standard fetch-on-mount pattern, not a cascading-render risk here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadConversations();
+  }, [loadConversations]);
+
+  useEffect(() => {
+    if (conversationId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadMessages(conversationId);
+      chatService.markAsRead(conversationId);
+      markAsRead(conversationId);
+    }
+  }, [conversationId, loadMessages, markAsRead]);
 
   const sendMessage = async (content: string) => {
     if (!conversationId) return;

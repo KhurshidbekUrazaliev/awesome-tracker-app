@@ -33,11 +33,12 @@ const IMAGE_FILL = { ...FILL, width: '100%', height: '100%' } as const;
 // A scrim over the photo, not a wash instead of one — transparent at the top
 // so the photo reads clearly, resolving to the theme's own flat color by the
 // bottom so it blends seamlessly into the card below.
-const HERO_SCRIM: { dark: string[]; light: string[] } = {
+type Scrim = [string, string, string];
+const HERO_SCRIM: { dark: Scrim; light: Scrim } = {
   dark: ['rgba(4,5,11,0)', 'rgba(4,5,11,0.38)', 'rgba(4,5,11,0.94)'],
   light: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.96)'],
 };
-const SCRIM_STOPS = [0, 0.55, 1];
+const SCRIM_STOPS: [number, number, number] = [0, 0.55, 1];
 
 function GlassIconButton({
   icon,

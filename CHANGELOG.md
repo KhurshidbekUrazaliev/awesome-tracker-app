@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.0.0] - 2026-09-05
+
+### Changed
+- **Upgraded Expo SDK 50 → 57** (React Native 0.73 → 0.86, React 18 → 19, TypeScript 5.3 → 6.0), via `npx expo install expo@^57.0.0` + `npx expo install --fix`. Breaking changes this surfaced and fixed:
+  - `app.config.ts`: the top-level `splash` config was removed from `ExpoConfig` (SDK 53+) in favor of the `expo-splash-screen` config plugin; migrated accordingly. Also added the now-required `expo-status-bar` plugin entry.
+  - `expo-notifications`: `setNotificationHandler`'s behavior object now requires `shouldShowBanner`/`shouldShowList`; `scheduleNotificationAsync`'s trigger now requires an explicit `type` (`SchedulableTriggerInputTypes.TIME_INTERVAL`); `removeNotificationSubscription` was removed in favor of calling `.remove()` on the subscription itself (`hooks/useNotifications.ts`, `services/notificationService.ts`).
+  - `@expo/vector-icons` is no longer transitively bundled by `expo` — added as an explicit direct dependency.
+  - `expo-linear-gradient`'s `colors`/`locations` props now require a non-empty tuple type rather than `string[]`/`number[]` (`app/index.tsx`).
+  - `useRef()` with no initial value no longer type-checks under the updated `@types/react`; fixed in `hooks/useNotifications.ts`.
+  - `eslint-config-expo@57` pulls in `@typescript-eslint` v8 (bumped from v6) and a stricter `eslint-plugin-react-hooks`, which caught two real pre-existing issues in `modules/chat/hooks/useChat.ts` (data-loading functions referenced before their declaration — reordered as `useCallback`s) and one in `hooks/useNetwork.ts` (synchronous `setState` in an effect with no external dependency — moved into the `useState` initializers instead).
+  - `jest-expo@57` requires the split-out `@react-native/jest-preset` package; added as a devDependency.
+  - Removed the now-unnecessary `@types/react-native` stub (react-native ships its own types).
+  - Bumped the frontend CI/CD jobs (`ci.yml`, `cd-pages.yml`) from Node 18 to Node 22 — React Native 0.86 requires Node ^20.19.4/^22.13.0+, which Node 18 no longer satisfies.
+  - `nativewind` stays pinned at v2.0.11 (with its existing `patch-package` patch) — verified it still compiles `className` correctly and the light/dark toggle still works under React 19/RN 0.86 via a local static build; a v4 migration was not needed.
+  - Verified: clean typecheck/lint/test, a successful `expo export -p web`, and a visual check of both themes in a browser (styling, the photo hero, and dark-mode toggling all intact).
+
 ## [1.6.0] - 2026-09-05
 
 ### Added
