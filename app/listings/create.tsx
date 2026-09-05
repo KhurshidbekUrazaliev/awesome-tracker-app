@@ -1,12 +1,11 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
+import MultiPhotoPicker from '@/components/MultiPhotoPicker';
 import { useListings } from '@/modules/listings/hooks/useListings';
 import { LISTING_TYPE_LABELS, LISTING_TYPES, type ListingType } from '@/modules/listings/store/useListingsStore';
-import uploadService from '@/services/uploadService';
 
 export default function CreateListingScreen() {
   const { createListing } = useListings();
@@ -17,25 +16,9 @@ export default function CreateListingScreen() {
   const [tags, setTags] = useState('');
   const [wantInReturn, setWantInReturn] = useState('');
   const [trialDays, setTrialDays] = useState('');
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const pickPhoto = async () => {
-    try {
-      setIsUploading(true);
-      setError(null);
-      const asset = await uploadService.pickImage();
-      if (!asset) return;
-      const { url } = await uploadService.uploadFile(asset.uri);
-      setMediaUrl(url);
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload photo');
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const submit = async () => {
     if (!title.trim() || !description.trim() || !category.trim()) {
@@ -59,7 +42,7 @@ export default function CreateListingScreen() {
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean),
-        media: mediaUrl ? [mediaUrl] : [],
+        media: mediaUrls,
         wantInReturn: type === 'exchange' ? wantInReturn.trim() || undefined : undefined,
         trialDays: type === 'trial' ? parsedTrialDays : undefined,
       });
@@ -70,13 +53,6 @@ export default function CreateListingScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const confirmDiscardPhoto = () => {
-    Alert.alert('Remove photo?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => setMediaUrl(null) },
-    ]);
   };
 
   return (
@@ -142,23 +118,10 @@ export default function CreateListingScreen() {
           />
         )}
 
-        <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">Photo (optional)</Text>
-        {mediaUrl ? (
-          <TouchableOpacity onPress={confirmDiscardPhoto} className="mb-4">
-            <Image source={{ uri: mediaUrl }} style={{ width: 120, height: 120, borderRadius: 12 }} />
-            <View className="absolute top-1 right-1 bg-black/60 rounded-full p-1">
-              <Ionicons name="close" size={14} color="#fff" />
-            </View>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={pickPhoto}
-            disabled={isUploading}
-            className="w-28 h-28 rounded-xl bg-gray-100 dark:bg-navy-800 items-center justify-center mb-4"
-          >
-            <Ionicons name={isUploading ? 'hourglass-outline' : 'camera-outline'} size={26} color="#9CA3AF" />
-          </TouchableOpacity>
-        )}
+        <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">Photos (optional, up to 5)</Text>
+        <View className="mb-4">
+          <MultiPhotoPicker value={mediaUrls} onChange={setMediaUrls} max={5} />
+        </View>
 
         {error && <Text className="text-sm text-red-500 mb-4">{error}</Text>}
 

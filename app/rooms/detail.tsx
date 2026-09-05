@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, Linking, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Button from '@/components/Button';
 import Loader from '@/components/Loader';
+import PhotoGallery from '@/components/PhotoGallery';
 import { useRoomDetail } from '@/modules/rooms/hooks/useRoomDetail';
 import roomsService from '@/modules/rooms/services/roomsService';
 import { ROOM_VISIBILITY_LABELS, type RoomItem } from '@/modules/rooms/store/useRoomsStore';
@@ -62,8 +63,10 @@ function ItemCard({
         </Text>
       )}
 
-      {item.media[0] && (
-        <Image source={{ uri: item.media[0] }} style={{ width: '100%', height: 160, borderRadius: 12, marginTop: 8 }} />
+      {item.media.length > 0 && (
+        <View style={{ marginTop: 8 }}>
+          <PhotoGallery photos={item.media} height={160} />
+        </View>
       )}
 
       {item.type === 'plan' && item.checklist && item.checklist.length > 0 && (

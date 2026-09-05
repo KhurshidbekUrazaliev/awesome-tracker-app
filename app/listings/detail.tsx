@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Avatar from '@/components/Avatar';
 import Button from '@/components/Button';
 import Loader from '@/components/Loader';
+import PhotoGallery from '@/components/PhotoGallery';
 import { useListingDetail } from '@/modules/listings/hooks/useListingDetail';
 import { LISTING_TYPE_LABELS } from '@/modules/listings/store/useListingsStore';
 import { useSafetyActions } from '@/modules/safety/hooks/useSafetyActions';
@@ -137,8 +138,10 @@ export default function ListingDetailScreen() {
     <View className="flex-1 bg-white dark:bg-navy-950">
       <Stack.Screen options={{ title: LISTING_TYPE_LABELS[listing.type], headerShown: true }} />
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 48 }}>
-        {listing.media[0] && (
-          <Image source={{ uri: listing.media[0] }} style={{ width: '100%', height: 220, borderRadius: 16 }} className="mb-4" />
+        {listing.media.length > 0 && (
+          <View className="mb-4">
+            <PhotoGallery photos={listing.media} height={220} />
+          </View>
         )}
 
         <View className="flex-row items-center justify-between mb-3">

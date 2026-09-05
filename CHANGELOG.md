@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.8.0] - 2026-09-05
+
+### Added
+- **Multi-photo support for listings and room moments.** The `media[]` array field already supported multiple photos on both the DB and API side (Stage 1/6) — only the create/detail UI artificially capped it at one.
+  - New `components/MultiPhotoPicker.tsx` (upload up to 5 photos, tap to remove) used by both `app/listings/create.tsx` and `app/rooms/add-item.tsx` (for `moment` items).
+  - New `components/PhotoGallery.tsx` (a single full-width photo, or a horizontally-scrolling filmstrip when there's more than one) used by both `app/listings/detail.tsx` and `app/rooms/detail.tsx`.
+  - Updated `docs/PRODUCT_PLAN.md` and the published plan artifact.
+  - Verified: clean typecheck/lint/test, and a visual pass confirming the picker's empty state renders correctly in the create-listing flow.
+
 ## [2.7.0] - 2026-09-05
 
 ### Changed

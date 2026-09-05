@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
+import MultiPhotoPicker from '@/components/MultiPhotoPicker';
 import { useRoomDetail } from '@/modules/rooms/hooks/useRoomDetail';
 import { ROOM_ITEM_TYPE_LABELS, ROOM_ITEM_TYPES, type ChecklistEntry, type RoomItemType } from '@/modules/rooms/store/useRoomsStore';
-import uploadService from '@/services/uploadService';
 
 export default function AddRoomItemScreen() {
   const { roomId } = useLocalSearchParams<{ roomId: string }>();
@@ -17,27 +17,11 @@ export default function AddRoomItemScreen() {
   const [content, setContent] = useState('');
   const [url, setUrl] = useState('');
   const [dueAt, setDueAt] = useState('');
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [checklistDraft, setChecklistDraft] = useState('');
   const [checklist, setChecklist] = useState<ChecklistEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const pickPhoto = async () => {
-    try {
-      setIsUploading(true);
-      setError(null);
-      const asset = await uploadService.pickImage();
-      if (!asset) return;
-      const { url: uploadedUrl } = await uploadService.uploadFile(asset.uri);
-      setMediaUrl(uploadedUrl);
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload photo');
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   const addChecklistEntry = () => {
     if (!checklistDraft.trim()) return;
@@ -76,7 +60,7 @@ export default function AddRoomItemScreen() {
         title: title.trim(),
         content: content.trim() || undefined,
         url: type === 'link' ? url.trim() : undefined,
-        media: type === 'moment' && mediaUrl ? [mediaUrl] : undefined,
+        media: type === 'moment' && mediaUrls.length > 0 ? mediaUrls : undefined,
         dueAt: parsedDueAt ? parsedDueAt.toISOString() : undefined,
         checklist: type === 'plan' && checklist.length > 0 ? checklist : undefined,
       });
@@ -136,20 +120,8 @@ export default function AddRoomItemScreen() {
 
         {type === 'moment' && (
           <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">Photo</Text>
-            {mediaUrl ? (
-              <TouchableOpacity onPress={() => setMediaUrl(null)}>
-                <Image source={{ uri: mediaUrl }} style={{ width: 120, height: 120, borderRadius: 12 }} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={pickPhoto}
-                disabled={isUploading}
-                className="w-28 h-28 rounded-xl bg-gray-100 dark:bg-navy-800 items-center justify-center"
-              >
-                <Ionicons name={isUploading ? 'hourglass-outline' : 'camera-outline'} size={26} color="#9CA3AF" />
-              </TouchableOpacity>
-            )}
+            <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">Photos (up to 5)</Text>
+            <MultiPhotoPicker value={mediaUrls} onChange={setMediaUrls} max={5} />
           </View>
         )}
 

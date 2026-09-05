@@ -91,7 +91,7 @@ Each stage should be fully working, tested, and deployed before starting the nex
 
 ### Stage 1 — Core free listings (no payments) — ✅ Built
 - Data model: `Listing` table + type-specific fields for `idea`, `lesson`, `give_away`, `exchange` only (`server/src/db/schema.ts`).
-- Create/edit/delete a listing, with media upload (reuse existing Supabase Storage) — `server/src/routes/listings.ts`, `app/listings/create.tsx`.
+- Create/edit/delete a listing, with media upload (reuse existing Supabase Storage) — `server/src/routes/listings.ts`, `app/listings/create.tsx`. Supports up to 5 photos (`components/MultiPhotoPicker.tsx`, `components/PhotoGallery.tsx` for display — shared with Rooms' "moment" items).
 - Browse/search by category and keyword — `app/listings/index.tsx`.
 - Basic interaction flow: express interest / propose a trade → owner accepts → mark completed — `app/listings/detail.tsx`.
 - Basic star rating + review (`server/src/routes/reviews.ts`, `server/src/db/reviewsRepo.ts`), shown on the listing detail screen once completed.
@@ -120,7 +120,8 @@ Each stage should be fully working, tested, and deployed before starting the nex
 - Sharing controls: private / shared (invite specific people by email) / public (discoverable — `GET /api/rooms/discover`, excludes blocked users' rooms same as listings). Only the room owner can add/edit/delete items; visibility only controls who can *view*.
 - Frontend: `app/rooms/index.tsx` (My Rooms / Discover tabs), `create.tsx`, `detail.tsx` (items list, inline email-invite for shared rooms), `add-item.tsx` (type-specific fields, checklist builder for plans, photo upload for moments reusing the existing upload endpoint).
 - Home screen gained a "My Space" quick-action tile.
-- **Not built:** calendar *view* (events/reminders currently just list with a due date/time, not a calendar grid), moment "media[]" only supports one photo (like listings), and no due-date/time native picker (plain text input, format-validated) — these are polish-pass candidates, not core gaps.
+- **Not built:** calendar *view* (events/reminders currently just list with a due date/time, not a calendar grid), and no due-date/time native picker (plain text input, format-validated) — these are polish-pass candidates, not core gaps.
+- ✅ **Multi-photo support** (shared with listings, see below): moments now support up to 5 photos via `components/MultiPhotoPicker.tsx` and `components/PhotoGallery.tsx` — the `media[]` array field already supported this on both the DB and API side; only the create/detail UI artificially capped it at one.
 
 ### Stage 7 — Polish & launch — 🔶 Partially built
 - ✅ **Admin moderation tooling**: reports (from Stage 2) were being captured but never surfaced anywhere — now viewable and actionable. Admin access is granted purely by email via the `ADMIN_EMAILS` env var (no DB role, no self-service grant path — see `server/src/middleware/requireAdmin.ts`). `GET /api/admin/reports` resolves each report's actual target (listing title/status, or user name/email) so an admin doesn't have to cross-reference ids by hand; `POST /api/admin/reports/:id/resolve` and `POST /api/admin/listings/:id/close` take action. Frontend: `app/admin/index.tsx` — deliberately not linked from any navigation (reached by URL only), consistent with it being an internal tool, not a user-facing feature.
