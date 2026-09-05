@@ -6,6 +6,7 @@ import { useColorScheme } from 'nativewind';
 import Avatar from '@/components/Avatar';
 import Loader from '@/components/Loader';
 import { useListings } from '@/modules/listings/hooks/useListings';
+import { useTrendingCategories } from '@/modules/listings/hooks/useTrendingCategories';
 import { LISTING_TYPE_LABELS, LISTING_TYPES, type Listing, type ListingType } from '@/modules/listings/store/useListingsStore';
 import { formatDate } from '@/utils/formatDate';
 
@@ -69,11 +70,14 @@ function ListingCard({ item }: { item: Listing }) {
  */
 export default function ListingsFeed() {
   const { listings, isLoading, error, search, filters } = useListings();
+  const trendingCategories = useTrendingCategories();
   const [query, setQuery] = useState('');
 
   const activeType = filters.type;
   const applyType = (type?: ListingType) => search({ ...filters, type });
   const submitSearch = () => search({ ...filters, q: query.trim() || undefined });
+  const toggleCategory = (category: string) =>
+    search({ ...filters, category: filters.category === category ? undefined : category });
 
   return (
     <View style={{ flex: 1 }}>
@@ -104,6 +108,25 @@ export default function ListingsFeed() {
             />
           )}
         />
+
+        {trendingCategories.length > 0 && (
+          <View className="flex-row items-center mt-2.5">
+            <Ionicons name="trending-up-outline" size={14} color="#9CA3AF" style={{ marginRight: 6 }} />
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={trendingCategories}
+              keyExtractor={(c) => c.category}
+              renderItem={({ item }) => (
+                <FilterChip
+                  label={item.category}
+                  active={filters.category === item.category}
+                  onPress={() => toggleCategory(item.category)}
+                />
+              )}
+            />
+          </View>
+        )}
       </View>
 
       {isLoading && listings.length === 0 ? (

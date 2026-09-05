@@ -13,6 +13,7 @@ import {
   listInterestsForListing,
   listListings,
   listListingsByOwner,
+  listTrendingCategories,
   setInterestStatus,
   setListingStatus,
   updateListing,
@@ -62,6 +63,13 @@ router.get(
   '/mine',
   asyncHandler(async (req, res) => {
     res.json(await listListingsByOwner(req.userId!));
+  })
+);
+
+router.get(
+  '/trending-categories',
+  asyncHandler(async (_req, res) => {
+    res.json(await listTrendingCategories());
   })
 );
 

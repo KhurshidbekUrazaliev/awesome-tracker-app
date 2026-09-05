@@ -23,6 +23,11 @@ export interface ReputationSummary {
   totalReviews: number;
 }
 
+export interface TrendingCategory {
+  category: string;
+  count: number;
+}
+
 class ListingsService {
   async getListings(filters: ListingFilters = {}): Promise<Listing[]> {
     const response = await apiClient.get<Listing[]>('/listings', { params: filters });
@@ -31,6 +36,11 @@ class ListingsService {
 
   async getMyListings(): Promise<Listing[]> {
     const response = await apiClient.get<Listing[]>('/listings/mine');
+    return response.data;
+  }
+
+  async getTrendingCategories(): Promise<TrendingCategory[]> {
+    const response = await apiClient.get<TrendingCategory[]>('/listings/trending-categories');
     return response.data;
   }
 

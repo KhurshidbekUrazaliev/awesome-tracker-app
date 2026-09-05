@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, notInArray, or } from 'drizzle-orm';
+import { and, desc, eq, ilike, notInArray, or, sql } from 'drizzle-orm';
 import { db } from './client';
 import { listingInterests, listings, users } from './schema';
 import { toPublicUser, type PublicUser } from './usersRepo';
@@ -73,27 +73,51 @@ export interface ListingFilters {
   excludeOwnerIds?: string[];
 }
 
-/** Browse/search open listings, newest first, each with its owner attached. */
+/** Browse/search open listings. Ranked by relevance when searching, newest first otherwise. */
 export async function listListings(filters: ListingFilters): Promise<PublicListing[]> {
   const conditions = [eq(listings.status, filters.status ?? 'open')];
   if (filters.type) conditions.push(eq(listings.type, filters.type));
   if (filters.category) conditions.push(eq(listings.category, filters.category));
+
+  const tagMatches = filters.q ? sql`EXISTS (SELECT 1 FROM unnest(${listings.tags}) AS tag WHERE tag ILIKE ${`%${filters.q}%`})` : undefined;
   if (filters.q) {
     const like = `%${filters.q}%`;
-    conditions.push(or(ilike(listings.title, like), ilike(listings.description, like))!);
+    conditions.push(or(ilike(listings.title, like), ilike(listings.description, like), tagMatches)!);
   }
   if (filters.excludeOwnerIds?.length) {
     conditions.push(notInArray(listings.ownerId, filters.excludeOwnerIds));
   }
+
+  // Relevance: a title match ranks above a tag match, which ranks above a description-only match.
+  const relevance = filters.q
+    ? sql`CASE WHEN ${ilike(listings.title, `%${filters.q}%`)} THEN 3 WHEN ${tagMatches} THEN 2 ELSE 1 END`
+    : undefined;
 
   const rows = await db
     .select()
     .from(listings)
     .innerJoin(users, eq(listings.ownerId, users.id))
     .where(and(...conditions))
-    .orderBy(desc(listings.createdAt));
+    .orderBy(...(relevance ? [desc(relevance)] : []), desc(listings.createdAt));
 
   return rows.map((r) => toPublicListing(r.listings, r.users));
+}
+
+export interface TrendingCategory {
+  category: string;
+  count: number;
+}
+
+/** Top categories among currently open listings — powers "trending" quick filters on the browse feed. */
+export async function listTrendingCategories(limit = 8): Promise<TrendingCategory[]> {
+  const rows = await db
+    .select({ category: listings.category, count: sql<number>`count(*)::int` })
+    .from(listings)
+    .where(eq(listings.status, 'open'))
+    .groupBy(listings.category)
+    .orderBy(desc(sql`count(*)`))
+    .limit(limit);
+  return rows;
 }
 
 export async function listListingsByOwner(ownerId: string): Promise<PublicListing[]> {
