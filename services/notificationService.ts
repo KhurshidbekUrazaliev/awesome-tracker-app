@@ -1,3 +1,4 @@
+import { isRunningInExpoGo } from 'expo';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,6 +40,11 @@ class NotificationService {
   }
 
   async getPushToken(): Promise<string | null> {
+    // Remote push tokens require a development build since SDK 53 — expo-notifications
+    // throws (on Android) if getExpoPushTokenAsync is called from Expo Go.
+    if (isRunningInExpoGo()) {
+      return null;
+    }
     try {
       const token = await Notifications.getExpoPushTokenAsync();
       await AsyncStorage.setItem('pushToken', token.data);
