@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.9.0] - 2026-09-06
+
+### Added
+- **Calendar view for Rooms.** Every reminder/event across all of a user's rooms, in one month-grid view — closes the last "not built" gap flagged for Stage 6.
+  - Backend: `GET /api/rooms/calendar` (`listCalendarItemsForOwner` in `server/src/db/roomsRepo.ts`) joins `room_items` to `rooms`, filtered to the caller's own rooms with `type IN (reminder, event)` and a non-null `dueAt`. Query-only addition — no migration needed.
+  - Frontend: new `app/rooms/calendar.tsx`, a hand-built month grid (no calendar library) reached via a calendar icon in the "My Space" header. Days with items get a dot; tapping a day lists its items below the grid (icon, title, room name, time); tapping an item jumps to its room.
+  - Verified: clean typecheck/lint, and the month-grid date math (`buildMonthGrid`, `dateKey`/`parseDateKey` round-trip) confirmed correct across a leap year (Feb 2028, 29 days) and a non-leap February (2027, 28 days) via direct execution.
+
 ## [2.8.0] - 2026-09-05
 
 ### Added

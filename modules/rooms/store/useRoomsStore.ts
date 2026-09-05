@@ -53,6 +53,11 @@ export interface RoomItem {
   updatedAt: string;
 }
 
+/** A reminder/event item, with its room's name attached — for the cross-room calendar view. */
+export interface CalendarItem extends RoomItem {
+  roomName: string;
+}
+
 interface RoomsStore {
   myRooms: Room[];
   discoverRooms: Room[];

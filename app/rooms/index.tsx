@@ -50,7 +50,17 @@ export default function RoomsScreen() {
 
   return (
     <View className="flex-1 bg-gray-50 dark:bg-navy-950">
-      <Stack.Screen options={{ title: 'My Space', headerShown: true }} />
+      <Stack.Screen
+        options={{
+          title: 'My Space',
+          headerShown: true,
+          headerRight: () => (
+            <TouchableOpacity onPress={() => router.push('/rooms/calendar')} accessibilityLabel="Calendar" style={{ paddingHorizontal: 8 }}>
+              <Ionicons name="calendar-outline" size={22} color="#7c3aed" />
+            </TouchableOpacity>
+          ),
+        }}
+      />
 
       <View className="flex-row px-6 pt-4 pb-3 bg-white dark:bg-navy-900 border-b border-gray-100 dark:border-white/10" style={{ gap: 8 }}>
         <TouchableOpacity

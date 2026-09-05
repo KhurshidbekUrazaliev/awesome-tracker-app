@@ -11,6 +11,7 @@ import {
   findItemRowById,
   findRoomRowById,
   getRoomById,
+  listCalendarItemsForOwner,
   listItems,
   listMembers,
   listPublicRooms,
@@ -78,6 +79,13 @@ router.get(
   asyncHandler(async (req, res) => {
     const excludeOwnerIds = await listBlockedIds(req.userId!);
     res.json(await listPublicRooms(excludeOwnerIds));
+  })
+);
+
+router.get(
+  '/calendar',
+  asyncHandler(async (req, res) => {
+    res.json(await listCalendarItemsForOwner(req.userId!));
   })
 );
 

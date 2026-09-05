@@ -1,4 +1,4 @@
-import { and, desc, eq, notInArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, notInArray } from 'drizzle-orm';
 import { db } from './client';
 import { roomItems, roomMembers, rooms, users } from './schema';
 import { toPublicUser, type PublicUser } from './usersRepo';
@@ -179,6 +179,21 @@ export async function canViewRoom(room: { id: string; ownerId: string; visibilit
 export async function listItems(roomId: string): Promise<PublicRoomItem[]> {
   const rows = await db.select().from(roomItems).where(eq(roomItems.roomId, roomId)).orderBy(desc(roomItems.createdAt));
   return rows.map(toPublicRoomItem);
+}
+
+export interface CalendarItem extends PublicRoomItem {
+  roomName: string;
+}
+
+/** Every reminder/event across all rooms the user owns, for the cross-room calendar view. */
+export async function listCalendarItemsForOwner(ownerId: string): Promise<CalendarItem[]> {
+  const rows = await db
+    .select()
+    .from(roomItems)
+    .innerJoin(rooms, eq(roomItems.roomId, rooms.id))
+    .where(and(eq(rooms.ownerId, ownerId), inArray(roomItems.type, ['reminder', 'event']), isNotNull(roomItems.dueAt)))
+    .orderBy(roomItems.dueAt);
+  return rows.map((r) => ({ ...toPublicRoomItem(r.room_items), roomName: r.rooms.name }));
 }
 
 export async function findItemRowById(id: string) {

@@ -1,5 +1,5 @@
 import apiClient from '@/services/apiClient';
-import type { ChecklistEntry, Room, RoomItem, RoomItemType, RoomVisibility } from '../store/useRoomsStore';
+import type { CalendarItem, ChecklistEntry, Room, RoomItem, RoomItemType, RoomVisibility } from '../store/useRoomsStore';
 
 export interface CreateRoomInput {
   name: string;
@@ -67,6 +67,11 @@ class RoomsService {
 
   async deleteItem(roomId: string, itemId: string): Promise<void> {
     await apiClient.delete(`/rooms/${roomId}/items/${itemId}`);
+  }
+
+  async getCalendarItems(): Promise<CalendarItem[]> {
+    const response = await apiClient.get<CalendarItem[]>('/rooms/calendar');
+    return response.data;
   }
 }
 
