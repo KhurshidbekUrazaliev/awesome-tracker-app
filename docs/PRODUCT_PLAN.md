@@ -1,6 +1,6 @@
 # Product Plan: TrY — A Trust-First Sharing Platform
 
-**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 and 6 built. Stages 4–5 (rentals, auctions) blocked on a payment-provider decision — skipped ahead to Stage 6 in the meantime.
+**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 and 6 built, Stage 7 partially built (admin moderation tooling). Stages 4–5 (rentals, auctions) remain blocked on a payment-provider decision.
 **Purpose of this document:** A complete, standalone specification of the product so that any engineer or AI assistant picking this up — with zero prior context — can continue the build without re-deriving the vision from scratch.
 
 ---
@@ -122,11 +122,11 @@ Each stage should be fully working, tested, and deployed before starting the nex
 - Home screen gained a "My Space" quick-action tile.
 - **Not built:** calendar *view* (events/reminders currently just list with a due date/time, not a calendar grid), moment "media[]" only supports one photo (like listings), and no due-date/time native picker (plain text input, format-validated) — these are polish-pass candidates, not core gaps.
 
-### Stage 7 — Polish & launch
-- Search/discovery improvements (better ranking, trending topics).
-- Push notifications (bids, trade proposals, reminders).
-- Admin moderation tooling hardened.
-- App Store / Google Play submission (the existing codebase is Expo/React Native, so this targets iOS + Android + web from one codebase).
+### Stage 7 — Polish & launch — 🔶 Partially built
+- ✅ **Admin moderation tooling**: reports (from Stage 2) were being captured but never surfaced anywhere — now viewable and actionable. Admin access is granted purely by email via the `ADMIN_EMAILS` env var (no DB role, no self-service grant path — see `server/src/middleware/requireAdmin.ts`). `GET /api/admin/reports` resolves each report's actual target (listing title/status, or user name/email) so an admin doesn't have to cross-reference ids by hand; `POST /api/admin/reports/:id/resolve` and `POST /api/admin/listings/:id/close` take action. Frontend: `app/admin/index.tsx` — deliberately not linked from any navigation (reached by URL only), consistent with it being an internal tool, not a user-facing feature.
+- ⬜ Search/discovery improvements (better ranking, trending topics) — not started.
+- ⬜ Push notifications (bids, trade proposals, reminders) — not started. The codebase already has `expo-notifications` wired up from the original tracker app (`services/notificationService.ts`, `hooks/useNotifications.ts`) — this would extend it to marketplace/room events rather than build from scratch.
+- ⬜ App Store / Google Play submission — **not something buildable in-session**: needs the user's own Apple Developer / Google Play Developer accounts, app signing, store listing metadata, and a review process. Flagging this explicitly so a future session doesn't assume it's just more code.
 
 ---
 

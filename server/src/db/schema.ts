@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, primaryKey, index, integer, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, primaryKey, index, integer, jsonb, boolean } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -138,6 +138,7 @@ export const reports = pgTable(
     targetType: text('target_type').notNull(), // 'listing' | 'user'
     targetId: text('target_id').notNull(),
     reason: text('reason').notNull(),
+    resolved: boolean('resolved').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('reports_target_idx').on(table.targetType, table.targetId)]

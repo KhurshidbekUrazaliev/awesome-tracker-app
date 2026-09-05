@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.5.0] - 2026-09-05
+
+### Added
+- **Stage 7 (partial): admin moderation tooling.** Reports captured since Stage 2 were never surfaced anywhere — now viewable and actionable.
+  - Backend: `resolved` column on `reports` (migration `0005_shallow_speedball.sql`). Admin access is granted purely by email via the new `ADMIN_EMAILS` env var — no DB role, no self-service way to grant it (`server/src/middleware/requireAdmin.ts`). `GET /api/admin/reports` (`server/src/routes/admin.ts`) resolves each report's actual target (listing title/status, or user name/email) so an admin doesn't have to cross-reference ids by hand; `POST /api/admin/reports/:id/resolve` and `POST /api/admin/listings/:id/close` take action.
+  - Frontend: `app/admin/index.tsx` — deliberately not linked from any navigation (reached by URL only), since it's an internal tool, not a user-facing feature.
+  - Updated `docs/PRODUCT_PLAN.md` and the published plan artifact: Stage 7 marked partially built, with search/discovery, push notifications, and app store submission explicitly flagged as not started (the last one isn't buildable in-session at all — it needs the user's own developer accounts).
+  - Verified: clean typecheck/lint/test across app and server.
+
 ## [2.4.0] - 2026-09-05
 
 ### Added

@@ -1,0 +1,1 @@
+ALTER TABLE "reports" ADD COLUMN "resolved" boolean DEFAULT false NOT NULL;

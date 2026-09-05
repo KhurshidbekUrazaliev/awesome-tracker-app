@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import pinoHttp from 'pino-http';
 import { isDbReachable } from './db/client';
 import { logger } from './logger';
+import adminRoutes from './routes/admin';
 import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
 import listingRoutes from './routes/listings';
@@ -83,6 +84,7 @@ app.use('/api/listings', listingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/safety', safetyRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Not found' });
