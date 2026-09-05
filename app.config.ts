@@ -2,8 +2,8 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'AwesomeProject',
-  slug: 'awesome-project',
+  name: 'TrY',
+  slug: 'try',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -11,14 +11,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.awesomeproject.app'
+    bundleIdentifier: 'com.try.app'
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#ffffff'
     },
-    package: 'com.awesomeproject.app'
+    package: 'com.try.app'
   },
   web: {
     favicon: './assets/favicon.png'
@@ -42,11 +42,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       }
     ]
   ],
-  scheme: 'awesomeproject',
+  scheme: 'try',
   experiments: {
-    // GitHub Pages serves this app from a /awesome-tracker-app subpath; other
-    // hosts (e.g. a Docker/nginx deployment serving from the domain root)
-    // should build with WEB_BASE_PATH='' to disable the prefix.
+    // The GitHub repo/Pages URL still uses its original "awesome-tracker-app"
+    // name from before this project was renamed to TrY — renaming the repo
+    // itself is a separate, deliberate decision, so the deploy path stays as
+    // is for now. Other hosts (e.g. a Docker/nginx deployment serving from
+    // the domain root) should build with WEB_BASE_PATH='' to disable it.
     baseUrl: process.env.WEB_BASE_PATH ?? '/awesome-tracker-app'
   },
   extra: {

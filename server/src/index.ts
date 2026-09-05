@@ -8,6 +8,8 @@ import { isDbReachable } from './db/client';
 import { logger } from './logger';
 import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
+import listingRoutes from './routes/listings';
+import reviewRoutes from './routes/reviews';
 import uploadRoutes from './routes/upload';
 import userRoutes from './routes/users';
 
@@ -75,6 +77,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/listings', listingRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Not found' });

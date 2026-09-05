@@ -1,11 +1,16 @@
-# Awesome Project
+# TrY
 
-A full-featured React Native mobile application built with Expo Router.
+A trust-first sharing platform — give away, teach, and trade with people you can
+trust, built around generosity rather than profit. See
+[`docs/PRODUCT_PLAN.md`](docs/PRODUCT_PLAN.md) for the full product spec and staged roadmap.
 
 ## 🚀 Features
 
+- **Listings** (Stage 1): share an idea, teach a lesson, give something away, or
+  propose a trade — searchable and browsable by category
+- **Trust & reputation**: star ratings and reviews tied to real completed exchanges
 - **Authentication**: Login, signup with JWT
-- **Real-time Chat**: Messaging and conversations
+- **Real-time Chat**: coordinate handoffs with the other party
 - **User Profiles**: Profile management with avatar upload
 - **Settings**: Notifications, security, preferences
 - **Internationalization**: EN, ES support
@@ -17,7 +22,7 @@ A full-featured React Native mobile application built with Expo Router.
 ## 📁 Project Structure
 
 ```
-AwesomeProject/
+TrY/
 ├── app/              # Expo Router pages
 ├── modules/          # Feature modules
 ├── components/       # Global components

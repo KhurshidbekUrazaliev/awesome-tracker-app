@@ -141,7 +141,7 @@ export default function HomeScreen() {
               className="font-bold text-base tracking-wide"
               style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
             >
-              AwesomeProject
+              TrY
             </Text>
           </View>
           <GlassIconButton
@@ -193,13 +193,13 @@ export default function HomeScreen() {
               className="bg-white dark:bg-navy-900 rounded-3xl px-6 pt-7 pb-6 border border-gray-100 dark:border-white/10"
               style={{ shadowColor: '#000', shadowOpacity: isDark ? 0.3 : 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 10 }}
             >
-              <EyebrowTag label="PERSONAL · WORKSPACE" />
+              <EyebrowTag label="GIVE · TRADE · TRUST" />
               <Text className="text-gray-900 dark:text-white text-3xl font-extrabold leading-tight mb-3">
-                Everything you need,{'\n'}in one place.
+                Share what you have.{'\n'}Find what you need.
               </Text>
               <Text className="text-gray-600 dark:text-navy-200 text-[15px] leading-relaxed mb-6">
-                Chat with your people, manage your profile, and stay in control of your account —
-                all from one focused workspace.
+                Give away, teach, and trade with people you can trust — a community built on
+                generosity, not profit.
               </Text>
 
               <View className="flex-row" style={{ gap: 12 }}>
@@ -246,7 +246,7 @@ export default function HomeScreen() {
               className="font-bold text-sm tracking-wide"
               style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
             >
-              AwesomeProject
+              TrY
             </Text>
           </View>
           <GlassIconButton
@@ -289,8 +289,11 @@ export default function HomeScreen() {
         >
           <Text className="text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</Text>
 
-          <View className="flex-row" style={{ gap: 12 }}>
+          <View className="flex-row mb-3" style={{ gap: 12 }}>
+            <QuickActionTile href="/listings" icon="gift-outline" label="Browse & Share" isDark={isDark} />
             <QuickActionTile href="/chat" icon="chatbubble-outline" label="Messages" isDark={isDark} />
+          </View>
+          <View className="flex-row" style={{ gap: 12 }}>
             <QuickActionTile href="/profile" icon="person-outline" label="Profile" isDark={isDark} />
             <QuickActionTile href="/settings" icon="settings-outline" label="Settings" isDark={isDark} />
           </View>
@@ -311,7 +314,7 @@ function QuickActionTile({
   label,
   isDark,
 }: {
-  href: '/chat' | '/profile' | '/settings';
+  href: '/listings' | '/chat' | '/profile' | '/settings';
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   isDark: boolean;

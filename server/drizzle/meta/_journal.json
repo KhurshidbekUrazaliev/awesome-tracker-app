@@ -8,6 +8,13 @@
       "when": 1788557215480,
       "tag": "0000_minor_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788610164731,
+      "tag": "0001_low_legion",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.1.0] - 2026-09-05
+
+### Added
+- **Renamed the product to TrY** and pivoted its purpose: from a personal tracker app to a trust-first sharing platform. Full product spec at `docs/PRODUCT_PLAN.md` (also published as an artifact — see the session for the link).
+  - Rebranding: `app.config.ts` (name, slug, scheme, iOS/Android bundle identifiers), `package.json` name, `README.md`, in-app branding text and hero copy in `app/index.tsx`. The GitHub repo itself stays `awesome-tracker-app` for now — a separate, deliberate decision not yet made.
+- **Stage 1 of the roadmap: core free listings.** People can share an **Idea**, teach a **Lesson**, **Give away** something for free, or propose an **Exchange** — no money involved (that's deferred to later stages, pending a deliberate payment-provider choice).
+  - Backend: new `listings`, `listing_interests`, and `reviews` tables (Drizzle migration `0001_low_legion.sql`); `server/src/routes/listings.ts` (CRUD, browse/search by type/category/keyword, express-interest / accept-interest / mark-completed flow) and `server/src/routes/reviews.ts` (post-completion star ratings tied to a real listing — no anonymous reviews, per the trust-first design principle).
+  - Frontend: a new `modules/listings/` module (store/service/hooks, mirroring the existing chat module's conventions) and three screens — `app/listings/index.tsx` (browse/search/filter), `app/listings/create.tsx` (post a listing, with photo upload reusing the existing generic upload endpoint), `app/listings/detail.tsx` (express interest, owner accepts, mark completed, leave a review).
+  - The home screen's Quick Actions gained a "Browse & Share" tile as the new primary entry point; a full home-screen takeover (making the browse feed itself the home screen) is left for a later polish pass, per the plan.
+  - Verified: clean typecheck/lint/test across both the app and `server/`, a successful `expo export -p web`, and a visual pass on the rebrand plus the browse/create screens (including the error state when the API is unreachable, and the conditional "what would you like in return" field for Exchange listings).
+
 ## [2.0.0] - 2026-09-05
 
 ### Changed

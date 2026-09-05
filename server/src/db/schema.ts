@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, primaryKey, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, primaryKey, index, integer } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -45,4 +45,78 @@ export const messages = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('messages_conversation_id_created_at_idx').on(table.conversationId, table.createdAt)]
+);
+
+/**
+ * Stage 1 listing types only (idea, lesson, give_away, exchange) — no money
+ * involved. trial/rental/auction are added in later stages once a payment
+ * provider is deliberately chosen (see docs/PRODUCT_PLAN.md, "Open Decisions").
+ */
+export const listings = pgTable(
+  'listings',
+  {
+    id: text('id').primaryKey(),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(), // 'idea' | 'lesson' | 'give_away' | 'exchange'
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    category: text('category').notNull(),
+    tags: text('tags').array().notNull().default([]),
+    media: text('media').array().notNull().default([]),
+    // Only meaningful for type = 'exchange': what the owner wants in return.
+    wantInReturn: text('want_in_return'),
+    status: text('status').notNull().default('open'), // 'open' | 'pending' | 'completed' | 'closed'
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('listings_status_created_at_idx').on(table.status, table.createdAt),
+    index('listings_owner_id_idx').on(table.ownerId),
+    index('listings_category_idx').on(table.category),
+  ]
+);
+
+/** One user expressing interest in / proposing a trade on someone else's listing. */
+export const listingInterests = pgTable(
+  'listing_interests',
+  {
+    id: text('id').primaryKey(),
+    listingId: text('listing_id')
+      .notNull()
+      .references(() => listings.id, { onDelete: 'cascade' }),
+    requesterId: text('requester_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    message: text('message'),
+    status: text('status').notNull().default('pending'), // 'pending' | 'accepted' | 'declined'
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('listing_interests_listing_id_idx').on(table.listingId)]
+);
+
+/**
+ * A review left by one user about another after a completed listing
+ * interaction. Always tied to a real listing — no anonymous/free-floating
+ * reviews — so reputation can't be gamed (see docs/PRODUCT_PLAN.md §4).
+ */
+export const reviews = pgTable(
+  'reviews',
+  {
+    id: text('id').primaryKey(),
+    listingId: text('listing_id')
+      .notNull()
+      .references(() => listings.id, { onDelete: 'cascade' }),
+    reviewerId: text('reviewer_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    revieweeId: text('reviewee_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    rating: integer('rating').notNull(),
+    comment: text('comment'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('reviews_reviewee_id_idx').on(table.revieweeId)]
 );
