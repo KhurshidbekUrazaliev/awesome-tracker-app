@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.3.0] - 2026-09-05
+
+### Added
+- **Stage 3 of the roadmap: trial listings.** A new `trial` listing type — a fixed try-period in days (`trialDays`) before returning the item. Reuses the existing express-interest → accept → complete lifecycle and chat for handoff coordination; no new mechanics were needed.
+  - Backend: `trial_days` column on `listings` (migration `0003_bent_randall.sql`), validated server-side (required for `trial`, rejected for every other type, same pattern as `wantInReturn` for `exchange`).
+  - Frontend: "Trial" type chip in the create form with a day-count field, a "Try it for up to N days" info box on the listing detail screen, and a type-aware CTA ("Ask to Try").
+  - **Deliberately skipped** the "convert to rental" hook originally scoped for this stage — with no Rental type to convert into yet (Stage 4), building it now would just be dead UI. Deferred to Stage 4.
+  - Updated `docs/PRODUCT_PLAN.md` and the published plan artifact to mark Stage 3 built.
+  - Verified: clean typecheck/lint/test across app and server, and a visual pass on the new Trial chip and conditional day-count field.
+
 ## [2.2.0] - 2026-09-05
 
 ### Added

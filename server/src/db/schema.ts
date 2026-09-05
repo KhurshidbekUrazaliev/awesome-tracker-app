@@ -59,7 +59,7 @@ export const listings = pgTable(
     ownerId: text('owner_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    type: text('type').notNull(), // 'idea' | 'lesson' | 'give_away' | 'exchange'
+    type: text('type').notNull(), // 'idea' | 'lesson' | 'give_away' | 'exchange' | 'trial'
     title: text('title').notNull(),
     description: text('description').notNull(),
     category: text('category').notNull(),
@@ -67,6 +67,8 @@ export const listings = pgTable(
     media: text('media').array().notNull().default([]),
     // Only meaningful for type = 'exchange': what the owner wants in return.
     wantInReturn: text('want_in_return'),
+    // Only meaningful for type = 'trial': how many days the borrower gets to try it.
+    trialDays: integer('trial_days'),
     status: text('status').notNull().default('open'), // 'open' | 'pending' | 'completed' | 'closed'
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { User as PublicUser } from '@/store/useUserStore';
 
-export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange'] as const;
+export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial'] as const;
 export type ListingType = (typeof LISTING_TYPES)[number];
 
 export const LISTING_TYPE_LABELS: Record<ListingType, string> = {
@@ -9,6 +9,7 @@ export const LISTING_TYPE_LABELS: Record<ListingType, string> = {
   lesson: 'Lesson',
   give_away: 'Give away',
   exchange: 'Exchange',
+  trial: 'Trial',
 };
 
 export interface Listing {
@@ -22,6 +23,7 @@ export interface Listing {
   tags: string[];
   media: string[];
   wantInReturn?: string;
+  trialDays?: number;
   status: 'open' | 'pending' | 'completed' | 'closed';
   createdAt: string;
   updatedAt: string;

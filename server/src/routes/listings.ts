@@ -34,6 +34,7 @@ const createListingSchema = z.object({
   tags: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
   media: z.array(z.string().url()).max(10).optional(),
   wantInReturn: z.string().trim().min(1).max(500).optional(),
+  trialDays: z.number().int().min(1).max(90).optional(),
 });
 
 const updateListingSchema = createListingSchema.partial().omit({ type: true });
@@ -72,6 +73,12 @@ router.post(
     if (parsed.data.type !== 'exchange' && parsed.data.wantInReturn) {
       return res.status(400).json({ message: 'wantInReturn is only valid for exchange listings' });
     }
+    if (parsed.data.type === 'trial' && !parsed.data.trialDays) {
+      return res.status(400).json({ message: 'trialDays is required for trial listings' });
+    }
+    if (parsed.data.type !== 'trial' && parsed.data.trialDays) {
+      return res.status(400).json({ message: 'trialDays is only valid for trial listings' });
+    }
 
     const listing = await createListing({
       id: uuid(),
@@ -83,6 +90,7 @@ router.post(
       tags: parsed.data.tags ?? [],
       media: parsed.data.media ?? [],
       wantInReturn: parsed.data.wantInReturn,
+      trialDays: parsed.data.trialDays,
     });
     res.status(201).json(listing);
   })

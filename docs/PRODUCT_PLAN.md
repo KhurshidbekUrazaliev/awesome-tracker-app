@@ -1,6 +1,6 @@
 # Product Plan: TrY — A Trust-First Sharing Platform
 
-**Status:** Draft v1 — name decided (**TrY**), Stages 1–2 built.
+**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 built.
 **Purpose of this document:** A complete, standalone specification of the product so that any engineer or AI assistant picking this up — with zero prior context — can continue the build without re-deriving the vision from scratch.
 
 ---
@@ -104,8 +104,9 @@ Each stage should be fully working, tested, and deployed before starting the nex
 - Blocking a user — `blocks` table, `server/src/routes/safety.ts` (`POST`/`DELETE /api/safety/blocks`). A blocked user's listings are filtered out of the blocker's browse feed (`listListings`'s `excludeOwnerIds`). Manage blocked users at `app/settings/blocked.tsx`; report/block actions live on `app/listings/detail.tsx`.
 - **Not yet done:** full category breakdown on the reputation summary (currently just average + count, not broken down by listing type as originally scoped) and reputation badges. Left for a later polish pass alongside the home-screen takeover noted in Stage 1.
 
-### Stage 3 — Trial listings
-- New `trial` type: fixed try-period, handoff coordination via chat, "convert to rental" hook (inert until Stage 4 ships).
+### Stage 3 — Trial listings — ✅ Built
+- New `trial` type: a fixed try-period in days (`trialDays`), reusing the existing express-interest → accept → complete lifecycle and chat for handoff coordination — no new mechanics needed.
+- **Skipped the "convert to rental" hook** originally scoped here — with no Rental type to convert into yet (that's Stage 4), building it now would just be dead UI. Deferred entirely to Stage 4, when there's something real to wire it to.
 
 ### Stage 4 — Rental listings (payments, part 1)
 - **Requires a deliberate decision on a payment provider** (Stripe Connect is the common choice for marketplace payouts between users, but this is an explicit open decision — see §6).

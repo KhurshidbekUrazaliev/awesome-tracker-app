@@ -3,7 +3,7 @@ import { db } from './client';
 import { listingInterests, listings, users } from './schema';
 import { toPublicUser, type PublicUser } from './usersRepo';
 
-export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange'] as const;
+export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial'] as const;
 export type ListingType = (typeof LISTING_TYPES)[number];
 
 export interface PublicListing {
@@ -17,6 +17,7 @@ export interface PublicListing {
   tags: string[];
   media: string[];
   wantInReturn?: string;
+  trialDays?: number;
   status: 'open' | 'pending' | 'completed' | 'closed';
   createdAt: string;
   updatedAt: string;
@@ -44,6 +45,7 @@ function toPublicListing(row: typeof listings.$inferSelect, owner?: typeof users
     tags: row.tags,
     media: row.media,
     wantInReturn: row.wantInReturn ?? undefined,
+    trialDays: row.trialDays ?? undefined,
     status: row.status as PublicListing['status'],
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -124,6 +126,7 @@ export interface CreateListingInput {
   tags: string[];
   media: string[];
   wantInReturn?: string;
+  trialDays?: number;
 }
 
 export async function createListing(input: CreateListingInput): Promise<PublicListing> {
@@ -142,6 +145,7 @@ export interface UpdateListingInput {
   tags?: string[];
   media?: string[];
   wantInReturn?: string;
+  trialDays?: number;
 }
 
 export async function updateListing(id: string, updates: UpdateListingInput): Promise<PublicListing | undefined> {

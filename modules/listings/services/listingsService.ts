@@ -15,6 +15,7 @@ export interface CreateListingInput {
   tags?: string[];
   media?: string[];
   wantInReturn?: string;
+  trialDays?: number;
 }
 
 export interface ReputationSummary {

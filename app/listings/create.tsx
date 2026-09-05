@@ -16,6 +16,7 @@ export default function CreateListingScreen() {
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
   const [wantInReturn, setWantInReturn] = useState('');
+  const [trialDays, setTrialDays] = useState('');
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +42,11 @@ export default function CreateListingScreen() {
       setError('Title, description, and category are required.');
       return;
     }
+    const parsedTrialDays = parseInt(trialDays, 10);
+    if (type === 'trial' && (!trialDays || Number.isNaN(parsedTrialDays) || parsedTrialDays < 1)) {
+      setError('Enter how many days someone can try this for.');
+      return;
+    }
     try {
       setIsSubmitting(true);
       setError(null);
@@ -55,6 +61,7 @@ export default function CreateListingScreen() {
           .filter(Boolean),
         media: mediaUrl ? [mediaUrl] : [],
         wantInReturn: type === 'exchange' ? wantInReturn.trim() || undefined : undefined,
+        trialDays: type === 'trial' ? parsedTrialDays : undefined,
       });
       router.replace(`/listings/detail?id=${listing.id}`);
     } catch (err: any) {
@@ -120,6 +127,17 @@ export default function CreateListingScreen() {
             value={wantInReturn}
             onChangeText={setWantInReturn}
             placeholder="e.g. A guitar lesson, or a good book"
+            containerClassName="mb-4"
+          />
+        )}
+
+        {type === 'trial' && (
+          <Input
+            label="How many days can someone try it?"
+            value={trialDays}
+            onChangeText={(v) => setTrialDays(v.replace(/[^0-9]/g, ''))}
+            placeholder="e.g. 7"
+            keyboardType="number-pad"
             containerClassName="mb-4"
           />
         )}

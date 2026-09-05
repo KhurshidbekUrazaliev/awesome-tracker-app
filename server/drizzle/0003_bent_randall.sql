@@ -1,0 +1,1 @@
+ALTER TABLE "listings" ADD COLUMN "trial_days" integer;

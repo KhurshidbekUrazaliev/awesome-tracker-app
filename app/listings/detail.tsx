@@ -162,6 +162,15 @@ export default function ListingDetailScreen() {
           </View>
         )}
 
+        {listing.trialDays != null && (
+          <View className="bg-gray-50 dark:bg-navy-900 rounded-xl p-4 mb-4 flex-row items-center">
+            <Ionicons name="time-outline" size={18} color="#7c3aed" />
+            <Text className="text-sm text-gray-800 dark:text-navy-100 ml-2">
+              Try it for up to {listing.trialDays} {listing.trialDays === 1 ? 'day' : 'days'}
+            </Text>
+          </View>
+        )}
+
         <View className="flex-row items-center flex-wrap mb-5" style={{ gap: 6 }}>
           <View className="bg-gray-100 dark:bg-navy-800 px-2.5 py-1 rounded-full">
             <Text className="text-xs text-gray-600 dark:text-navy-300">{listing.category}</Text>
@@ -234,7 +243,7 @@ export default function ListingDetailScreen() {
               style={{ minHeight: 64, textAlignVertical: 'top' }}
             />
             <Button
-              title={listing.type === 'exchange' ? 'Propose Trade' : 'Express Interest'}
+              title={listing.type === 'exchange' ? 'Propose Trade' : listing.type === 'trial' ? 'Ask to Try' : 'Express Interest'}
               onPress={handleExpressInterest}
               loading={sending}
               fullWidth
