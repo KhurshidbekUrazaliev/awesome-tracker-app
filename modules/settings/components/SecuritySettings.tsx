@@ -7,7 +7,7 @@ export default function SecuritySettings() {
   const { security, updateSecurity } = useSettingsStore();
 
   return (
-    <View className="bg-white rounded-lg p-4">
+    <View className="bg-white dark:bg-navy-800 rounded-lg p-4">
       <NotificationToggle
         title="Two-Factor Authentication"
         description="Add an extra layer of security to your account"

@@ -13,7 +13,7 @@ export default function EditProfileScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Edit Profile', headerShown: true }} />
-      <ScrollView className="flex-1 bg-white">
+      <ScrollView className="flex-1 bg-white dark:bg-navy-950">
         <View className="px-6 py-8">
           <AvatarUpload
             uri={user.avatar}

@@ -52,14 +52,14 @@ export default function Modal({
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <View className="flex-1 bg-black/50 justify-center items-center">
           <TouchableWithoutFeedback>
-            <View className={`${sizeClasses[size]} bg-white rounded-xl p-6 ${size === 'full' ? '' : 'max-h-[80%]'}`}>
+            <View className={`${sizeClasses[size]} bg-white dark:bg-navy-800 rounded-xl p-6 ${size === 'full' ? '' : 'max-h-[80%]'}`}>
               {/* Header */}
               {(title || showCloseButton) && (
                 <View className="flex-row justify-between items-center mb-4">
-                  {title && <Text className="text-xl font-bold text-gray-900">{title}</Text>}
+                  {title && <Text className="text-xl font-bold text-gray-900 dark:text-white">{title}</Text>}
                   {showCloseButton && (
                     <TouchableOpacity onPress={onClose} className="p-2">
-                      <Text className="text-2xl text-gray-500">×</Text>
+                      <Text className="text-2xl text-gray-500 dark:text-navy-300">×</Text>
                     </TouchableOpacity>
                   )}
                 </View>

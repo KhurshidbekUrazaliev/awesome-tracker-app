@@ -68,8 +68,8 @@ export default function LoginForm() {
       />
 
       {error && (
-        <View className="bg-red-50 p-3 rounded-lg">
-          <Text className="text-red-600 text-sm">{error}</Text>
+        <View className="bg-red-50 dark:bg-red-950 p-3 rounded-lg">
+          <Text className="text-red-600 dark:text-red-400 text-sm">{error}</Text>
         </View>
       )}
 

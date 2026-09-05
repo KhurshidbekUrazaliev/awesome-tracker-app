@@ -14,11 +14,11 @@ export default function AvatarUpload({ uri, name, onPress, loading }: AvatarUplo
     <View className="items-center">
       <TouchableOpacity onPress={onPress} disabled={loading}>
         <Avatar uri={uri} name={name} size="xl" />
-        <View className="absolute bottom-0 right-0 bg-primary-600 rounded-full p-2">
+        <View className="absolute bottom-0 right-0 bg-primary-600 dark:bg-primary-500 rounded-full p-2">
           <Text className="text-white text-xs">📷</Text>
         </View>
       </TouchableOpacity>
-      <Text className="text-sm text-primary-600 mt-2">Change Photo</Text>
+      <Text className="text-sm text-primary-600 dark:text-primary-400 mt-2">Change Photo</Text>
     </View>
   );
 }

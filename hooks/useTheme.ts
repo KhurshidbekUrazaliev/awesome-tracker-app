@@ -8,16 +8,18 @@ export function useTheme() {
   const activeTheme = theme === 'system' ? systemColorScheme : theme;
   const isDark = activeTheme === 'dark';
 
+  // Mirrors the navy/violet scale in tailwind.config.js — for the handful of
+  // places (ActivityIndicator, StatusBar) that need a raw color instead of
+  // a className.
   const colors = {
-    background: isDark ? '#1F2937' : '#FFFFFF',
-    foreground: isDark ? '#FFFFFF' : '#1F2937',
-    card: isDark ? '#374151' : '#F9FAFB',
-    border: isDark ? '#4B5563' : '#E5E7EB',
-    primary: '#0284c7',
+    background: isDark ? '#0a0e1a' : '#FFFFFF',
+    card: isDark ? '#1a2140' : '#F9FAFB',
+    border: isDark ? '#262e52' : '#E5E7EB',
+    primary: isDark ? '#a78bfa' : '#7c3aed',
     text: {
-      primary: isDark ? '#F9FAFB' : '#111827',
-      secondary: isDark ? '#D1D5DB' : '#6B7280',
-      tertiary: isDark ? '#9CA3AF' : '#9CA3AF',
+      primary: isDark ? '#f4f5f9' : '#111827',
+      secondary: isDark ? '#9aa1bb' : '#6B7280',
+      tertiary: isDark ? '#6b7494' : '#9CA3AF',
     },
   };
 

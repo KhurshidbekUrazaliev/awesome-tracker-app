@@ -1,3 +1,4 @@
+import { useColorScheme } from 'nativewind';
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, TouchableOpacityProps } from 'react-native';
 
@@ -19,13 +20,16 @@ export default function Button({
   style,
   ...props
 }: ButtonProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   const baseClasses = 'rounded-lg items-center justify-center';
-  
+
   const variantClasses = {
-    primary: 'bg-primary-600',
-    secondary: 'bg-gray-600',
-    outline: 'border-2 border-primary-600 bg-transparent',
-    danger: 'bg-red-600',
+    primary: 'bg-primary-600 dark:bg-primary-500',
+    secondary: 'bg-gray-600 dark:bg-navy-600',
+    outline: 'border-2 border-primary-600 dark:border-primary-400 bg-transparent',
+    danger: 'bg-red-600 dark:bg-red-500',
   };
 
   const sizeClasses = {
@@ -43,12 +47,14 @@ export default function Button({
   const textColorClasses = {
     primary: 'text-white',
     secondary: 'text-white',
-    outline: 'text-primary-600',
+    outline: 'text-primary-600 dark:text-primary-400',
     danger: 'text-white',
   };
 
   const disabledClass = disabled || loading ? 'opacity-50' : '';
   const widthClass = fullWidth ? 'w-full' : '';
+
+  const spinnerColor = variant === 'outline' ? (isDark ? '#a78bfa' : '#7c3aed') : '#ffffff';
 
   return (
     <TouchableOpacity
@@ -58,7 +64,7 @@ export default function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? '#0284c7' : '#ffffff'} />
+        <ActivityIndicator color={spinnerColor} />
       ) : (
         <Text className={`font-semibold ${textSizeClasses[size]} ${textColorClasses[variant]}`}>
           {title}

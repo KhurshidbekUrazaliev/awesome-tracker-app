@@ -1,0 +1,37 @@
+diff --git a/node_modules/nativewind/dist/style-sheet/color-scheme.js b/node_modules/nativewind/dist/style-sheet/color-scheme.js
+index c08e40b..e169646 100644
+--- a/node_modules/nativewind/dist/style-sheet/color-scheme.js
++++ b/node_modules/nativewind/dist/style-sheet/color-scheme.js
+@@ -14,6 +14,16 @@ class ColorSchemeStore {
+         this.getColorScheme = () => {
+             return this.colorScheme;
+         };
++        this.syncDomClass = () => {
++            try {
++                if (typeof document !== "undefined") {
++                    document.documentElement.classList.toggle("dark", this.colorScheme === "dark");
++                }
++            }
++            catch {
++                // Just silently fail
++            }
++        };
+         this.setColorScheme = (colorSchemeSystem) => {
+             const oldColorScheme = this.colorScheme;
+             this.colorSchemeSystem = colorSchemeSystem;
+@@ -22,6 +32,7 @@ class ColorSchemeStore {
+                     ? react_native_1.Appearance.getColorScheme() || "light"
+                     : this.colorSchemeSystem;
+             if (oldColorScheme !== this.colorScheme) {
++                this.syncDomClass();
+                 this.notifyMedia(["colorScheme"]);
+                 this.notifyColorScheme();
+             }
+@@ -32,6 +43,7 @@ class ColorSchemeStore {
+                 : this.colorScheme;
+             this.colorScheme = currentColor === "light" ? "dark" : "light";
+             this.colorSchemeSystem = currentColor;
++            this.syncDomClass();
+             this.notifyMedia(["colorScheme"]);
+             this.notifyColorScheme();
+         };

@@ -10,9 +10,9 @@ export default function NotificationsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Notifications', headerShown: true }} />
-      <ScrollView className="flex-1 bg-white">
+      <ScrollView className="flex-1 bg-white dark:bg-navy-950">
         <View className="px-6 py-4">
-          <Text className="text-sm text-gray-500 mb-4">
+          <Text className="text-sm text-gray-500 dark:text-navy-300 mb-4">
             Manage how you receive notifications
           </Text>
           

@@ -41,19 +41,19 @@ export default function Avatar({
   };
 
   return (
-    <View 
-      className={`${sizeClasses[size]} ${roundedClass} items-center justify-center overflow-hidden bg-primary-200`}
+    <View
+      className={`${sizeClasses[size]} ${roundedClass} items-center justify-center overflow-hidden bg-primary-200 dark:bg-navy-700`}
       style={style}
       {...props}
     >
       {uri ? (
-        <Image 
-          source={{ uri }} 
+        <Image
+          source={{ uri }}
           className="w-full h-full"
           resizeMode="cover"
         />
       ) : (
-        <Text className={`${textSizeClasses[size]} font-semibold text-primary-700`}>
+        <Text className={`${textSizeClasses[size]} font-semibold text-primary-700 dark:text-primary-200`}>
           {getInitials(name)}
         </Text>
       )}

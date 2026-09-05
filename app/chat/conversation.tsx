@@ -18,7 +18,7 @@ export default function ConversationScreen() {
     <>
       <Stack.Screen options={{ title: 'Conversation', headerShown: true }} />
       <KeyboardAvoidingView
-        className="flex-1 bg-white"
+        className="flex-1 bg-white dark:bg-navy-950"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={100}
       >

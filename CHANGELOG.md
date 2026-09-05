@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] - 2026-09-05
+
+### Added
+- **Dark mode**: a real navy + violet dark theme, not just a toggle that did nothing. `tailwind.config.js` gains `darkMode: 'class'`, a violet `primary` scale (replacing the old sky-blue), and a bespoke `navy` neutral scale for dark surfaces. Every screen and shared component (`app/**`, `components/*`, `modules/**/components/*`) now carries `dark:` variants.
+- `app/_layout.tsx` gains a `ThemeSync` component that keeps NativeWind's `dark:` classes in sync with the existing persisted `useThemeStore` choice (light/dark/system), and themes the native header/status bar to match.
+- **Patched a real upstream bug**: `nativewind@2.0.11`'s web implementation only sets the DOM `.dark` class once at page load — calling `setColorScheme()` afterward updates its React state but never touches the DOM, so `dark:` utilities silently never respond to an in-session theme change on web. Fixed via `patch-package` (`patches/nativewind+2.0.11.patch`), applied automatically on `npm install` via a new `postinstall` script. Verified before and after: without the patch, toggling themes updated the native header (driven by raw JS) but left every NativeWind-styled surface stuck; with it, every screen (unauthenticated and authenticated) responds correctly in both directions.
+
 ## [1.3.0] - 2026-09-05
 
 ### Changed
