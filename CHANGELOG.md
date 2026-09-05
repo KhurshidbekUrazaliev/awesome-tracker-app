@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.6.0] - 2026-09-05
+
+### Added
+- **Real photography in the home screen hero** (`app/index.tsx`), replacing the flat gradient with four bundled photos (`assets/hero/`), each given one distinct role so nothing repeats across the app:
+  - `nabawi-sunset.jpg` — full-bleed signed-out hero background.
+  - `clocktower-sky.jpg` — the circular seal medallion overlapping the content card.
+  - `mosque-interior.jpg` — a small rotated "floating photo" card resting above the card, echoing the floating-marker language from the 1.5.0 design.
+  - `clocktower-twin.jpg` — the signed-in dashboard banner background.
+  - A theme-aware scrim (`HERO_SCRIM`, transparent at the top, resolving to the theme's own flat color at the bottom) sits over each photo so it blends seamlessly into the card/surface below in both light and dark mode, rather than needing a synthetic glow.
+  - The top nav row (brand mark, theme toggle) now always renders in a fixed white-on-photo style, since it sits on a real photo rather than a flat surface — decoupled from the light/dark toggle, matching how the reference design keeps hero nav legible regardless of theme.
+  - **Caught and fixed a web-specific layout bug during verification**: an absolutely-positioned `<Image>` (a replaced element) doesn't stretch to fill via `inset: 0` alone on web the way a plain `View`/gradient does — it rendered at its native pixel dimensions instead of covering the hero. Fixed by adding explicit `width: '100%', height: '100%'` alongside the absolute-fill style for both full-bleed photos.
+  - Verified visually across all four combinations (signed-out/signed-in × light/dark) via a local static build.
+
 ## [1.5.1] - 2026-09-05
 
 ### Fixed

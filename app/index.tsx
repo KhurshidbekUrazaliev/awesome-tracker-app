@@ -3,7 +3,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Avatar from '@/components/Avatar';
 import Button from '@/components/Button';
@@ -11,55 +11,53 @@ import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import { useUserStore } from '@/store/useUserStore';
 
-// Dark reads as genuinely black-navy (violet only shows up as an accent, not
-// as the dominant wash); light is clean white with the faintest violet tint —
-// same idea, opposite weight.
-const HERO_GRADIENT: { dark: string[]; light: string[] } = {
-  dark: ['#04050b', '#0a0e1a', '#1b1030'],
-  light: ['#ffffff', '#f8f7ff', '#f0ecfe'],
+// One photo set, four distinct roles — nothing repeats across the app so
+// each screen keeps its own identity while sharing a visual language.
+const HERO_IMAGES = {
+  // Signed-out hero: full-bleed backdrop.
+  hero: require('@/assets/hero/nabawi-sunset.jpg'),
+  // Circular seal overlapping the content card.
+  seal: require('@/assets/hero/clocktower-sky.jpg'),
+  // Small floating photo card above the content card.
+  marker: require('@/assets/hero/mosque-interior.jpg'),
+  // Signed-in dashboard banner backdrop.
+  banner: require('@/assets/hero/clocktower-twin.jpg'),
 };
 
-/** Soft layered glow used behind the hero content — the same trick as a
- * blurred spotlight, built from plain views so it works identically on
- * web and native without a blur-per-pixel cost. */
-function GlowOrb({ size, color, opacity, style }: { size: number; color: string; opacity: number; style?: object }) {
-  return (
-    <View pointerEvents="none" style={[{ position: 'absolute', width: size, height: size }, style]}>
-      <View style={{ flex: 1, borderRadius: size / 2, backgroundColor: color, opacity }} />
-    </View>
-  );
-}
+const FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as const;
+// Absolutely-positioned <img> elements are replaced elements on web — inset:0
+// alone doesn't stretch them the way it does a plain View/div, so the
+// full-bleed background photos need an explicit 100%/100% on top of it.
+const IMAGE_FILL = { ...FILL, width: '100%', height: '100%' } as const;
+
+// A scrim over the photo, not a wash instead of one — transparent at the top
+// so the photo reads clearly, resolving to the theme's own flat color by the
+// bottom so it blends seamlessly into the card below.
+const HERO_SCRIM: { dark: string[]; light: string[] } = {
+  dark: ['rgba(4,5,11,0)', 'rgba(4,5,11,0.38)', 'rgba(4,5,11,0.94)'],
+  light: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0.96)'],
+};
+const SCRIM_STOPS = [0, 0.55, 1];
 
 function GlassIconButton({
   icon,
   onPress,
   accessibilityLabel,
-  isDark,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   accessibilityLabel: string;
-  isDark: boolean;
 }) {
-  // BlurView isn't a react-native/react-native-web primitive, so NativeWind
-  // won't transform a className placed directly on it — style the sized,
-  // rounded, bordered container with a plain View and let BlurView fill it.
+  // Always sits on a photo, never a flat surface — so its glass chrome stays
+  // fixed (white-on-dark-blur) instead of following the light/dark theme.
   return (
     <TouchableOpacity onPress={onPress} accessibilityLabel={accessibilityLabel} activeOpacity={0.75}>
       <View
         className="w-11 h-11 rounded-full items-center justify-center overflow-hidden"
-        style={{
-          borderWidth: 1,
-          borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(17,22,42,0.12)',
-          backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(17,22,42,0.04)',
-        }}
+        style={{ borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', backgroundColor: 'rgba(255,255,255,0.12)' }}
       >
-        <BlurView
-          intensity={40}
-          tint={isDark ? 'dark' : 'light'}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-        <Ionicons name={icon} size={19} color={isDark ? '#ffffff' : '#11162a'} />
+        <BlurView intensity={45} tint="dark" style={FILL} />
+        <Ionicons name={icon} size={19} color="#ffffff" />
       </View>
     </TouchableOpacity>
   );
@@ -74,33 +72,59 @@ function EyebrowTag({ label }: { label: string }) {
   );
 }
 
+/** Small rotated photo card used as a floating accent over the hero photo. */
+function FloatingPhoto({
+  source,
+  size,
+  rotate,
+  style,
+}: {
+  source: number;
+  size: { width: number; height: number };
+  rotate: string;
+  style?: object;
+}) {
+  return (
+    <View
+      style={[
+        {
+          ...size,
+          borderRadius: 20,
+          overflow: 'hidden',
+          borderWidth: 3,
+          borderColor: 'rgba(255,255,255,0.92)',
+          transform: [{ rotate }],
+          shadowColor: '#000',
+          shadowOpacity: 0.35,
+          shadowRadius: 14,
+          shadowOffset: { width: 0, height: 6 },
+          elevation: 10,
+        },
+        style,
+      ]}
+    >
+      <Image source={source} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const { user, isAuthenticated } = useUserStore();
   const { logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const gradient = isDark ? HERO_GRADIENT.dark : HERO_GRADIENT.light;
+  const scrim = isDark ? HERO_SCRIM.dark : HERO_SCRIM.light;
 
   if (!isAuthenticated || !user) {
     return (
       <View className="flex-1 bg-white dark:bg-navy-950">
+        <Image source={HERO_IMAGES.hero} style={IMAGE_FILL} resizeMode="cover" />
         <LinearGradient
-          colors={gradient}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-        <GlowOrb
-          size={340}
-          color={isDark ? '#8b5cf6' : '#7c3aed'}
-          opacity={isDark ? 0.14 : 0.06}
-          style={{ top: -120, right: -100 }}
-        />
-        <GlowOrb
-          size={220}
-          color={isDark ? '#a78bfa' : '#8b5cf6'}
-          opacity={isDark ? 0.1 : 0.05}
-          style={{ bottom: 160, left: -80 }}
+          colors={scrim}
+          locations={SCRIM_STOPS}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={FILL}
         />
 
         {/* Top nav */}
@@ -112,30 +136,56 @@ export default function HomeScreen() {
             <View className="w-9 h-9 rounded-full bg-primary-600 dark:bg-primary-500 items-center justify-center mr-2.5">
               <Ionicons name="pulse" size={18} color="#ffffff" />
             </View>
-            <Text className="text-navy-900 dark:text-white font-bold text-base tracking-wide">AwesomeProject</Text>
+            <Text
+              className="font-bold text-base tracking-wide"
+              style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
+            >
+              AwesomeProject
+            </Text>
           </View>
           <GlassIconButton
             icon={isDark ? 'sunny-outline' : 'moon-outline'}
             onPress={toggleTheme}
             accessibilityLabel="Toggle dark mode"
-            isDark={isDark}
           />
         </View>
 
-        <View className="flex-1 items-center justify-center" pointerEvents="none">
-          <Ionicons name="pulse" size={280} color={isDark ? '#ffffff' : '#7c3aed'} style={{ opacity: 0.05 }} />
+        {/* Floating photo accent, resting just above the content card */}
+        <View className="flex-1 px-6" style={{ justifyContent: 'flex-end', paddingBottom: 12 }} pointerEvents="none">
+          <FloatingPhoto
+            source={HERO_IMAGES.marker}
+            size={{ width: 112, height: 144 }}
+            rotate="-6deg"
+            style={{ alignSelf: 'flex-start' }}
+          />
         </View>
 
         {/* Overlay content card */}
         <View className="px-6 pb-8" style={{ paddingBottom: insets.bottom + 28 }}>
           <View className="relative">
-            {/* Badge overlapping the top-right corner of the card */}
+            {/* Seal overlapping the top-right corner of the card */}
             <View
-              className="absolute z-10 w-[76px] h-[76px] rounded-full bg-white dark:bg-navy-900 border-2 border-primary-500 dark:border-primary-400 items-center justify-center"
-              style={{ top: -32, right: 18, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 8 }}
+              className="absolute z-10 rounded-full items-center justify-center overflow-hidden"
+              style={{
+                top: -32,
+                right: 18,
+                width: 76,
+                height: 76,
+                borderWidth: 3,
+                borderColor: isDark ? '#1b1030' : '#ffffff',
+                shadowColor: '#000',
+                shadowOpacity: 0.25,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 8,
+              }}
             >
-              <Ionicons name="shield-checkmark" size={22} color={isDark ? '#c4b5fd' : '#7c3aed'} />
-              <Text className="text-primary-700 dark:text-primary-200 text-[9px] font-bold tracking-wider mt-0.5">SECURE</Text>
+              <Image source={HERO_IMAGES.seal} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              <View
+                className="absolute z-10 rounded-full border-2 border-primary-500 dark:border-primary-400"
+                style={FILL}
+                pointerEvents="none"
+              />
             </View>
 
             <View
@@ -174,23 +224,13 @@ export default function HomeScreen() {
     <View className="flex-1 bg-gray-50 dark:bg-navy-950">
       {/* Hero banner */}
       <View style={{ height: 240 }}>
+        <Image source={HERO_IMAGES.banner} style={IMAGE_FILL} resizeMode="cover" />
         <LinearGradient
-          colors={gradient}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-        <GlowOrb
-          size={260}
-          color={isDark ? '#8b5cf6' : '#7c3aed'}
-          opacity={isDark ? 0.14 : 0.06}
-          style={{ top: -90, right: -70 }}
-        />
-        <GlowOrb
-          size={160}
-          color={isDark ? '#a78bfa' : '#8b5cf6'}
-          opacity={isDark ? 0.1 : 0.05}
-          style={{ bottom: -60, left: -40 }}
+          colors={scrim}
+          locations={SCRIM_STOPS}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={FILL}
         />
 
         <View
@@ -201,13 +241,17 @@ export default function HomeScreen() {
             <View className="w-8 h-8 rounded-full bg-primary-600 dark:bg-primary-500 items-center justify-center mr-2">
               <Ionicons name="pulse" size={16} color="#ffffff" />
             </View>
-            <Text className="text-navy-900 dark:text-white font-bold text-sm tracking-wide">AwesomeProject</Text>
+            <Text
+              className="font-bold text-sm tracking-wide"
+              style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
+            >
+              AwesomeProject
+            </Text>
           </View>
           <GlassIconButton
             icon={isDark ? 'sunny-outline' : 'moon-outline'}
             onPress={toggleTheme}
             accessibilityLabel="Toggle dark mode"
-            isDark={isDark}
           />
         </View>
 
