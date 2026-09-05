@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.4.0] - 2026-09-05
+
+### Added
+- **Stage 6 of the roadmap: personal space ("Rooms")** — skipped ahead of Stages 4/5 (rentals, auctions), which are blocked on a payment-provider decision the user deferred.
+  - Backend: new `rooms`, `room_members`, and `room_items` tables (migration `0004_freezing_marvel_apes.sql`). A single flexible `room_items` table — like `listings` — covers `note`, `link`, `reminder`, `event`, `wish`, `moment`, and `plan` (with an optional JSON checklist) rather than one table per type. `server/src/routes/rooms.ts`: CRUD for rooms and items, `GET /api/rooms/discover` for browsing public rooms (excludes blocked users, same as listings), and email-based member invites for `shared` rooms. Only the room owner can add/edit/delete items — visibility only controls who can *view*.
+  - Frontend: new `modules/rooms/` (store/service/hooks, same conventions as `modules/listings/`). Screens: `app/rooms/index.tsx` (My Rooms / Discover tabs), `create.tsx` (name, description, visibility picker), `detail.tsx` (items list, inline email-invite for shared rooms), `add-item.tsx` (type-specific fields — URL for links, due date/time for reminders/events, a checklist builder for plans, photo upload for moments reusing the existing generic upload endpoint).
+  - Home screen's Quick Actions gained a "My Space" tile, reflowed into a 3-row grid.
+  - Updated `docs/PRODUCT_PLAN.md` and the published plan artifact to mark Stage 6 built and note the Stage 4/5 payment-provider gate explicitly.
+  - Verified: clean typecheck/lint/test across app and server, and a visual pass on the new Quick Actions grid, My Space tabs, and create-room screen (including the visibility hint text changing per option).
+
 ## [2.3.0] - 2026-09-05
 
 ### Added

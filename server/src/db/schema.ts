@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, primaryKey, index, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, primaryKey, index, integer, jsonb } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -159,4 +159,76 @@ export const blocks = pgTable(
     primaryKey({ columns: [table.blockerId, table.blockedId] }),
     index('blocks_blocked_id_idx').on(table.blockedId),
   ]
+);
+
+/**
+ * Stage 6 (personal space): a Room is a user's own container for one area of
+ * their life (see docs/PRODUCT_PLAN.md §2.5) — secondary to the sharing
+ * marketplace, not the app's primary feature. Only the owner can add/edit/
+ * delete items; visibility controls who can *view* the room.
+ */
+export const rooms = pgTable(
+  'rooms',
+  {
+    id: text('id').primaryKey(),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description'),
+    visibility: text('visibility').notNull().default('private'), // 'private' | 'shared' | 'public'
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('rooms_owner_id_idx').on(table.ownerId),
+    index('rooms_visibility_idx').on(table.visibility),
+  ]
+);
+
+/** People a 'shared' room has been explicitly shared with. Irrelevant for private/public rooms. */
+export const roomMembers = pgTable(
+  'room_members',
+  {
+    roomId: text('room_id')
+      .notNull()
+      .references(() => rooms.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.roomId, table.userId] }),
+    index('room_members_user_id_idx').on(table.userId),
+  ]
+);
+
+/**
+ * One piece of content inside a Room. A single flexible table (like
+ * `listings`) rather than one table per content type — most of the
+ * originally-brainstormed types (notes, links, reminders, calendar events,
+ * wishlist items, moments, plans) fit the same few fields.
+ */
+export const roomItems = pgTable(
+  'room_items',
+  {
+    id: text('id').primaryKey(),
+    roomId: text('room_id')
+      .notNull()
+      .references(() => rooms.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(), // 'note' | 'link' | 'reminder' | 'event' | 'wish' | 'moment' | 'plan'
+    title: text('title').notNull(),
+    content: text('content'),
+    // Only meaningful for type = 'link'.
+    url: text('url'),
+    media: text('media').array().notNull().default([]),
+    // Only meaningful for type = 'reminder' | 'event'.
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    // Only meaningful for type = 'plan': an array of {text, done} checklist entries.
+    checklist: jsonb('checklist'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('room_items_room_id_idx').on(table.roomId, table.createdAt)]
 );

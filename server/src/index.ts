@@ -10,6 +10,7 @@ import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
 import listingRoutes from './routes/listings';
 import reviewRoutes from './routes/reviews';
+import roomRoutes from './routes/rooms';
 import safetyRoutes from './routes/safety';
 import uploadRoutes from './routes/upload';
 import userRoutes from './routes/users';
@@ -81,6 +82,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/safety', safetyRoutes);
+app.use('/api/rooms', roomRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ message: 'Not found' });

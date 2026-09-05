@@ -1,6 +1,6 @@
 # Product Plan: TrY — A Trust-First Sharing Platform
 
-**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 built.
+**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 and 6 built. Stages 4–5 (rentals, auctions) blocked on a payment-provider decision — skipped ahead to Stage 6 in the meantime.
 **Purpose of this document:** A complete, standalone specification of the product so that any engineer or AI assistant picking this up — with zero prior context — can continue the build without re-deriving the vision from scratch.
 
 ---
@@ -115,9 +115,12 @@ Each stage should be fully working, tested, and deployed before starting the nex
 ### Stage 5 — Auction listings (payments, part 2)
 - Bidding engine, deadline-based closing, automatic winner notification, payment capture on win (reuses Stage 4's payment integration).
 
-### Stage 6 — Personal space ("Rooms")
-- Notes, media, links, reminders, calendar, wishlists, moments, plans, checklists, as described in §2.5.
-- Sharing controls: private / shared-with-specific-people / public.
+### Stage 6 — Personal space ("Rooms") — ✅ Built
+- Built as a single flexible `room_items` table (like `listings`), not one table per content type: `note`, `link`, `reminder`, `event`, `wish`, `moment`, `plan` (with an optional checklist) all share the same few fields (title/content/url/media/dueAt/checklist).
+- Sharing controls: private / shared (invite specific people by email) / public (discoverable — `GET /api/rooms/discover`, excludes blocked users' rooms same as listings). Only the room owner can add/edit/delete items; visibility only controls who can *view*.
+- Frontend: `app/rooms/index.tsx` (My Rooms / Discover tabs), `create.tsx`, `detail.tsx` (items list, inline email-invite for shared rooms), `add-item.tsx` (type-specific fields, checklist builder for plans, photo upload for moments reusing the existing upload endpoint).
+- Home screen gained a "My Space" quick-action tile.
+- **Not built:** calendar *view* (events/reminders currently just list with a due date/time, not a calendar grid), moment "media[]" only supports one photo (like listings), and no due-date/time native picker (plain text input, format-validated) — these are polish-pass candidates, not core gaps.
 
 ### Stage 7 — Polish & launch
 - Search/discovery improvements (better ranking, trending topics).

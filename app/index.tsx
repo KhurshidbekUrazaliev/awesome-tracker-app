@@ -291,11 +291,15 @@ export default function HomeScreen() {
 
           <View className="flex-row mb-3" style={{ gap: 12 }}>
             <QuickActionTile href="/listings" icon="gift-outline" label="Browse & Share" isDark={isDark} />
+            <QuickActionTile href="/rooms" icon="albums-outline" label="My Space" isDark={isDark} />
+          </View>
+          <View className="flex-row mb-3" style={{ gap: 12 }}>
             <QuickActionTile href="/chat" icon="chatbubble-outline" label="Messages" isDark={isDark} />
+            <QuickActionTile href="/profile" icon="person-outline" label="Profile" isDark={isDark} />
           </View>
           <View className="flex-row" style={{ gap: 12 }}>
-            <QuickActionTile href="/profile" icon="person-outline" label="Profile" isDark={isDark} />
             <QuickActionTile href="/settings" icon="settings-outline" label="Settings" isDark={isDark} />
+            <View style={{ flex: 1 }} />
           </View>
 
           <TouchableOpacity onPress={logout} className="mt-10 mb-2 self-center flex-row items-center">
@@ -314,7 +318,7 @@ function QuickActionTile({
   label,
   isDark,
 }: {
-  href: '/listings' | '/chat' | '/profile' | '/settings';
+  href: '/listings' | '/rooms' | '/chat' | '/profile' | '/settings';
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   isDark: boolean;
