@@ -1,6 +1,6 @@
 {
   "name": "try",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -34,6 +34,7 @@
     "@expo/vector-icons": "^15.0.2",
     "@hookform/resolvers": "^3.3.0",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "9.1.0",
     "axios": "^1.6.0",
     "expo": "^57.0.20",
     "expo-blur": "~57.0.2",

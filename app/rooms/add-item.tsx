@@ -3,6 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Button from '@/components/Button';
+import DateTimeField from '@/components/DateTimeField';
 import Input from '@/components/Input';
 import MultiPhotoPicker from '@/components/MultiPhotoPicker';
 import { useRoomDetail } from '@/modules/rooms/hooks/useRoomDetail';
@@ -16,7 +17,7 @@ export default function AddRoomItemScreen() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [url, setUrl] = useState('');
-  const [dueAt, setDueAt] = useState('');
+  const [dueAt, setDueAt] = useState<Date | null>(null);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [checklistDraft, setChecklistDraft] = useState('');
   const [checklist, setChecklist] = useState<ChecklistEntry[]>([]);
@@ -42,13 +43,8 @@ export default function AddRoomItemScreen() {
       setError('A link needs a URL.');
       return;
     }
-    if ((type === 'reminder' || type === 'event') && !dueAt.trim()) {
-      setError('When should this happen? (e.g. 2026-09-20 09:00)');
-      return;
-    }
-    const parsedDueAt = dueAt.trim() ? new Date(dueAt.trim().replace(' ', 'T')) : null;
-    if (dueAt.trim() && (!parsedDueAt || Number.isNaN(parsedDueAt.getTime()))) {
-      setError('Use the format YYYY-MM-DD HH:MM.');
+    if ((type === 'reminder' || type === 'event') && !dueAt) {
+      setError('When should this happen?');
       return;
     }
 
@@ -61,7 +57,7 @@ export default function AddRoomItemScreen() {
         content: content.trim() || undefined,
         url: type === 'link' ? url.trim() : undefined,
         media: type === 'moment' && mediaUrls.length > 0 ? mediaUrls : undefined,
-        dueAt: parsedDueAt ? parsedDueAt.toISOString() : undefined,
+        dueAt: dueAt ? dueAt.toISOString() : undefined,
         checklist: type === 'plan' && checklist.length > 0 ? checklist : undefined,
       });
       router.back();
@@ -109,13 +105,7 @@ export default function AddRoomItemScreen() {
         )}
 
         {(type === 'reminder' || type === 'event') && (
-          <Input
-            label="When"
-            value={dueAt}
-            onChangeText={setDueAt}
-            placeholder="2026-09-20 09:00"
-            containerClassName="mb-4"
-          />
+          <DateTimeField label="When" value={dueAt} onChange={setDueAt} minimumDate={new Date()} containerClassName="mb-4" />
         )}
 
         {type === 'moment' && (

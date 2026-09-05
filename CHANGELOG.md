@@ -2,7 +2,12 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [2.10.0] - 2026-09-06
+## [2.11.0] - 2026-09-06
+
+### Added
+- **Native date/time picker for Room reminders/events**, replacing the plain-text "YYYY-MM-DD HH:MM" input — the last flagged gap for Stage 6. New `components/DateTimeField.tsx` uses `@react-native-community/datetimepicker` (inline `datetime` mode on iOS; chained date-then-time `DateTimePickerAndroid.open()` dialogs on Android, since Android's native picker only supports one mode at a time), with a `DateTimeField.web.tsx` override rendering a real `<input type="datetime-local">`. Verified: correct native module resolution per platform (checked both compiled bundles), and on web, the exact request payload the picker produces was confirmed to create a room item with the correct `dueAt` end-to-end.
+
+
 
 ### Added
 - **Search relevance ranking and trending categories** (Stage 7's last remaining "not started" item). Search now also matches `tags`, not just title/description. When a query is present, results are ranked by relevance (title match > tag match > description-only match) before falling back to recency; a plain browse keeps the existing newest-first order. New `GET /api/listings/trending-categories` (top categories by open-listing count) surfaces as tappable quick-filter chips on the browse feed. Query-only backend change, no migration.
