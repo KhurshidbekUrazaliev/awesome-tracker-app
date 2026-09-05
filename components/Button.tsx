@@ -1,6 +1,6 @@
 import { useColorScheme } from 'nativewind';
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, TouchableOpacityProps } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, TouchableOpacityProps, View } from 'react-native';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -10,7 +10,10 @@ interface ButtonProps extends TouchableOpacityProps {
   fullWidth?: boolean;
 }
 
-export default function Button({
+// forwardRef so `<Link asChild>` can attach its merged href/onClick props directly
+// to this component's underlying element — without it, Link falls back to a plain
+// browser navigation on web instead of client-side routing.
+const Button = React.forwardRef<View, ButtonProps>(function Button({
   title,
   variant = 'primary',
   size = 'md',
@@ -19,7 +22,7 @@ export default function Button({
   disabled,
   style,
   ...props
-}: ButtonProps) {
+}, ref) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -58,6 +61,7 @@ export default function Button({
 
   return (
     <TouchableOpacity
+      ref={ref}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${disabledClass} ${widthClass}`}
       disabled={disabled || loading}
       style={style}
@@ -72,4 +76,6 @@ export default function Button({
       )}
     </TouchableOpacity>
   );
-}
+});
+
+export default Button;

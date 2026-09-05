@@ -50,6 +50,15 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ vars.API_URL }}
         run: npm run build:web
 
+      - name: Add SPA fallback for client-side routes
+        # GitHub Pages only has a physical file for the root route (this is a
+        # single-page export, not per-route static files) — any direct load,
+        # refresh, or hard navigation to a nested route (e.g. /auth/signup)
+        # 404s otherwise. GH Pages serves 404.html for any unmatched path, so
+        # making it identical to index.html lets the app's own router take
+        # over and render the right screen for the URL already in the bar.
+        run: cp dist/index.html dist/404.html
+
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
