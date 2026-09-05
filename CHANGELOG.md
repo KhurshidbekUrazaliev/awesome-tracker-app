@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.12.0] - 2026-09-06
+
+### Added
+- **Reputation category breakdown and badges** — flagged as "not yet done" back when Stage 2 shipped. `GET /api/reviews/users/:userId` now also returns `byType` (average rating + review count per listing type — e.g. a separate average for "Give away" vs "Lesson") and `badges`, four thresholds computed from completed-listing counts by type plus overall rating: Generous Giver (10+ give-aways completed), Mentor (5+ lessons), Trusted Trader (10+ exchanges), Five-Star (5+ reviews averaging 4.5+). New `countCompletedListingsByType` in `listingsRepo.ts`; shown on the profile screen below the star rating. Query-only, no migration.
+
 ## [2.11.0] - 2026-09-06
 
 ### Added

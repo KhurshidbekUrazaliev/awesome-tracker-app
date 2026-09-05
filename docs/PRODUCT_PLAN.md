@@ -102,7 +102,7 @@ Each stage should be fully working, tested, and deployed before starting the nex
 - Reputation summary on profiles (average rating + review count) — `server/src/routes/reviews.ts` (already built in Stage 1), `app/profile/index.tsx`, `modules/listings/hooks/useReputation.ts`.
 - Reporting a listing or user — `reports` table, `server/src/routes/safety.ts` (`POST /api/safety/reports`). Captures the report only; no admin review UI yet (that's still Stage 7).
 - Blocking a user — `blocks` table, `server/src/routes/safety.ts` (`POST`/`DELETE /api/safety/blocks`). A blocked user's listings are filtered out of the blocker's browse feed (`listListings`'s `excludeOwnerIds`). Manage blocked users at `app/settings/blocked.tsx`; report/block actions live on `app/listings/detail.tsx`.
-- **Not yet done:** full category breakdown on the reputation summary (currently just average + count, not broken down by listing type as originally scoped) and reputation badges. Left for a later polish pass alongside the home-screen takeover noted in Stage 1.
+- ✅ **Reputation category breakdown and badges done**: `GET /api/reviews/users/:userId` now also returns `byType` (average rating + count per listing type reviewed, e.g. separate averages for "Give away" vs "Lesson") and `badges` — four thresholds computed from completed-listing counts by type plus overall rating: Generous Giver (10+ give-aways), Mentor (5+ lessons), Trusted Trader (10+ exchanges), Five-Star (5+ reviews averaging 4.5+). Shown on the profile screen below the star rating.
 
 ### Stage 3 — Trial listings — ✅ Built
 - New `trial` type: a fixed try-period in days (`trialDays`), reusing the existing express-interest → accept → complete lifecycle and chat for handoff coordination — no new mechanics needed.

@@ -4,6 +4,8 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { useUserStore } from '@/store/useUserStore';
 import { useReputation } from '@/modules/listings/hooks/useReputation';
+import { BADGE_INFO } from '@/modules/listings/services/listingsService';
+import { LISTING_TYPE_LABELS } from '@/modules/listings/store/useListingsStore';
 import Avatar from '@/components/Avatar';
 
 export default function ProfileScreen() {
@@ -30,6 +32,38 @@ export default function ProfileScreen() {
             </Text>
           )}
         </View>
+
+        {summary && summary.badges.length > 0 && (
+          <View className="flex-row flex-wrap justify-center mt-3 px-6" style={{ gap: 8 }}>
+            {summary.badges.map((badgeId) => {
+              const badge = BADGE_INFO[badgeId];
+              return (
+                <View key={badgeId} className="flex-row items-center bg-primary-50 dark:bg-primary-500/10 px-3 py-1.5 rounded-full">
+                  <Text className="text-sm">{badge.icon}</Text>
+                  <Text className="text-xs font-semibold text-primary-700 dark:text-primary-300 ml-1.5">{badge.label}</Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {summary && Object.keys(summary.byType).length > 0 && (
+          <View className="w-full px-6 mt-4">
+            {(Object.entries(summary.byType) as [keyof typeof summary.byType, { averageRating: number; count: number }][]).map(
+              ([type, stats]) => (
+                <View key={type} className="flex-row items-center justify-between py-1.5">
+                  <Text className="text-sm text-gray-600 dark:text-navy-300">{LISTING_TYPE_LABELS[type]}</Text>
+                  <View className="flex-row items-center">
+                    <Ionicons name="star" size={12} color="#f59e0b" />
+                    <Text className="text-sm text-gray-800 dark:text-navy-100 ml-1">
+                      {stats.averageRating.toFixed(1)} ({stats.count})
+                    </Text>
+                  </View>
+                </View>
+              )
+            )}
+          </View>
+        )}
       </View>
 
       <View className="p-6">

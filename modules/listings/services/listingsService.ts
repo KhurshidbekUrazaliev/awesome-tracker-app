@@ -18,9 +18,20 @@ export interface CreateListingInput {
   trialDays?: number;
 }
 
+export type BadgeId = 'generous_giver' | 'mentor' | 'trusted_trader' | 'five_star';
+
+export const BADGE_INFO: Record<BadgeId, { label: string; icon: string; description: string }> = {
+  generous_giver: { label: 'Generous Giver', icon: '🎁', description: '10+ give-aways completed' },
+  mentor: { label: 'Mentor', icon: '🎓', description: '5+ lessons completed' },
+  trusted_trader: { label: 'Trusted Trader', icon: '🤝', description: '10+ exchanges completed' },
+  five_star: { label: 'Five-Star', icon: '⭐', description: '5+ reviews averaging 4.5 or higher' },
+};
+
 export interface ReputationSummary {
   averageRating: number | null;
   totalReviews: number;
+  byType: Partial<Record<ListingType, { averageRating: number; count: number }>>;
+  badges: BadgeId[];
 }
 
 export interface TrendingCategory {

@@ -120,6 +120,19 @@ export async function listTrendingCategories(limit = 8): Promise<TrendingCategor
   return rows;
 }
 
+/** Completed-listing counts by type for one owner — powers reputation badges. */
+export async function countCompletedListingsByType(ownerId: string): Promise<Record<ListingType, number>> {
+  const rows = await db
+    .select({ type: listings.type, count: sql<number>`count(*)::int` })
+    .from(listings)
+    .where(and(eq(listings.ownerId, ownerId), eq(listings.status, 'completed')))
+    .groupBy(listings.type);
+
+  const counts = Object.fromEntries(LISTING_TYPES.map((t) => [t, 0])) as Record<ListingType, number>;
+  for (const row of rows) counts[row.type as ListingType] = row.count;
+  return counts;
+}
+
 export async function listListingsByOwner(ownerId: string): Promise<PublicListing[]> {
   const rows = await db.select().from(listings).where(eq(listings.ownerId, ownerId)).orderBy(desc(listings.createdAt));
   return rows.map((r) => toPublicListing(r));
