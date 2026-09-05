@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.1] - 2026-09-05
+
+### Fixed
+- **Home screen hero ignored the theme toggle**: the 1.5.0 redesign hardcoded the hero's `LinearGradient` to a fixed navy→violet gradient regardless of `isDark`, so switching light/dark only changed the sun/moon icon — the hero itself never visibly responded. Fixed by keying the gradient (and the glow-orb colors/opacities) off `isDark`: dark now resolves to a genuinely near-black navy (`#04050b → #0a0e1a → #1b1030`, violet only as a faint top-corner accent glow) and light to a clean white with the faintest violet tint (`#ffffff → #f8f7ff → #f0ecfe`), on both the signed-out hero and the signed-in dashboard banner.
+  - Verified visually in both directions for both auth states (signed-out hero, signed-in dashboard) via a local static build: dark reads black-navy dominant with violet strictly as accent; light reads white with dark text and violet accents; no purple-dominant wash in either mode.
+
 ## [1.5.0] - 2026-09-05
 
 ### Added
