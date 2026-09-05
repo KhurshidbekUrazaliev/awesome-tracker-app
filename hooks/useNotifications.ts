@@ -14,6 +14,7 @@ export function useNotifications() {
       if (granted) {
         const token = await notificationService.getPushToken();
         setPushToken(token);
+        if (token) await notificationService.registerPushToken(token);
       }
     };
 

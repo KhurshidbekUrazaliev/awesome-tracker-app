@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import apiClient from './apiClient';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -45,6 +46,15 @@ class NotificationService {
     } catch (error) {
       console.error('Failed to get push token:', error);
       return null;
+    }
+  }
+
+  /** Sends the token to the backend so it can actually push notifications to this device. */
+  async registerPushToken(pushToken: string): Promise<void> {
+    try {
+      await apiClient.post('/users/me/push-token', { pushToken });
+    } catch (error) {
+      console.error('Failed to register push token with the server:', error);
     }
   }
 

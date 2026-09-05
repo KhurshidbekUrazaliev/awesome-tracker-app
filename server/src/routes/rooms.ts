@@ -25,6 +25,7 @@ import { listBlockedIds } from '../db/safetyRepo';
 import { findUserByEmail } from '../db/usersRepo';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
+import { sendPushNotification } from '../utils/pushNotifications';
 
 const router = Router();
 router.use(requireAuth);
@@ -149,6 +150,9 @@ router.post(
     if (!user) return res.status(404).json({ message: 'No user found with that email' });
 
     await addMember(req.params.id, user.id);
+
+    sendPushNotification(user.pushToken, 'Added to a room', `You've been added to "${room.name}"`, { roomId: room.id });
+
     res.status(201).json({ message: 'Member added' });
   })
 );

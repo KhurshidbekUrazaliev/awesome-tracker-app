@@ -3,7 +3,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme as useNativewindColorScheme } from 'nativewind';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useTheme } from '@/hooks/useTheme';
+import { useUserStore } from '@/store/useUserStore';
 import '../global.css';
 
 /** Keeps NativeWind's `dark:` variant classes in sync with useThemeStore's persisted choice. */
@@ -18,12 +20,20 @@ function ThemeSync() {
   return null;
 }
 
+/** Requests notification permission and registers the push token — only meaningful once signed in. */
+function PushNotificationSync() {
+  useNotifications();
+  return null;
+}
+
 export default function RootLayout() {
   const { isDark, colors } = useTheme();
+  const { isAuthenticated } = useUserStore();
 
   return (
     <SafeAreaProvider>
       <ThemeSync />
+      {isAuthenticated && <PushNotificationSync />}
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.background },

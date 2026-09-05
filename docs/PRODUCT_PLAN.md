@@ -1,6 +1,6 @@
 # Product Plan: TrY — A Trust-First Sharing Platform
 
-**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 and 6 built, Stage 7 partially built (admin moderation tooling). Stages 4–5 (rentals, auctions) remain blocked on a payment-provider decision.
+**Status:** Draft v1 — name decided (**TrY**), Stages 1–3 and 6 built, Stage 7 partially built (admin moderation tooling, push notifications). Stages 4–5 (rentals, auctions) remain blocked on a payment-provider decision.
 **Purpose of this document:** A complete, standalone specification of the product so that any engineer or AI assistant picking this up — with zero prior context — can continue the build without re-deriving the vision from scratch.
 
 ---
@@ -125,7 +125,7 @@ Each stage should be fully working, tested, and deployed before starting the nex
 ### Stage 7 — Polish & launch — 🔶 Partially built
 - ✅ **Admin moderation tooling**: reports (from Stage 2) were being captured but never surfaced anywhere — now viewable and actionable. Admin access is granted purely by email via the `ADMIN_EMAILS` env var (no DB role, no self-service grant path — see `server/src/middleware/requireAdmin.ts`). `GET /api/admin/reports` resolves each report's actual target (listing title/status, or user name/email) so an admin doesn't have to cross-reference ids by hand; `POST /api/admin/reports/:id/resolve` and `POST /api/admin/listings/:id/close` take action. Frontend: `app/admin/index.tsx` — deliberately not linked from any navigation (reached by URL only), consistent with it being an internal tool, not a user-facing feature.
 - ⬜ Search/discovery improvements (better ranking, trending topics) — not started.
-- ⬜ Push notifications (bids, trade proposals, reminders) — not started. The codebase already has `expo-notifications` wired up from the original tracker app (`services/notificationService.ts`, `hooks/useNotifications.ts`) — this would extend it to marketplace/room events rather than build from scratch.
+- ✅ **Push notifications**: `useNotifications()` existed in the original tracker app but was never actually called anywhere, and the fetched push token was only ever saved to local `AsyncStorage` — never sent to the backend, so no push could ever have been delivered. Fixed both gaps: a `pushToken` column on `users`, `POST /api/users/me/push-token` to register it, and `app/_layout.tsx` now mounts `useNotifications()` for authenticated users, which registers the token after requesting permission. `server/src/utils/pushNotifications.ts` sends via Expo's push API (fire-and-forget — a delivery failure never breaks the action that triggered it), wired into: interest received on your listing, your interest accepted, listing completed (prompts a review), and added to a shared room.
 - ⬜ App Store / Google Play submission — **not something buildable in-session**: needs the user's own Apple Developer / Google Play Developer accounts, app signing, store listing metadata, and a review process. Flagging this explicitly so a future session doesn't assume it's just more code.
 
 ---

@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { randomUUID as uuid } from 'node:crypto';
 import { z } from 'zod';
-import { deleteUser, findUserById, toPublicUser, updateUserProfile } from '../db/usersRepo';
+import { deleteUser, findUserById, toPublicUser, updatePushToken, updateUserProfile } from '../db/usersRepo';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
 import { uploadToStorage } from '../storage';
@@ -73,6 +73,18 @@ router.post(
     const user = await updateUserProfile(req.userId!, { avatar: avatarUrl });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ avatar: avatarUrl });
+  })
+);
+
+router.post(
+  '/me/push-token',
+  asyncHandler(async (req, res) => {
+    const parsed = z.object({ pushToken: z.string().trim().min(1).max(512) }).safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid input' });
+    }
+    await updatePushToken(req.userId!, parsed.data.pushToken);
+    res.status(204).send();
   })
 );
 

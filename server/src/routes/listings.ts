@@ -18,8 +18,10 @@ import {
   updateListing,
 } from '../db/listingsRepo';
 import { listBlockedIds } from '../db/safetyRepo';
+import { getPushToken } from '../db/usersRepo';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
+import { sendPushNotification } from '../utils/pushNotifications';
 
 const router = Router();
 router.use(requireAuth);
@@ -161,6 +163,14 @@ router.post(
       requesterId: req.userId!,
       message: parsed.data.message,
     });
+
+    sendPushNotification(
+      await getPushToken(row.ownerId),
+      'New interest in your listing',
+      `Someone's interested in "${row.title}"`,
+      { listingId: row.id }
+    );
+
     res.status(201).json(interest);
   })
 );
@@ -193,6 +203,14 @@ router.post(
 
     await setInterestStatus(interest.id, 'accepted');
     await setListingStatus(row.id, 'pending');
+
+    sendPushNotification(
+      await getPushToken(interest.requesterId),
+      'Your interest was accepted!',
+      `The owner of "${row.title}" said yes — coordinate the handoff in Messages.`,
+      { listingId: row.id }
+    );
+
     res.status(204).send();
   })
 );
@@ -212,6 +230,14 @@ router.post(
     }
 
     await setListingStatus(row.id, 'completed');
+
+    sendPushNotification(
+      await getPushToken(accepted.requesterId),
+      'All done!',
+      `"${row.title}" is marked completed — leave a review when you get a chance.`,
+      { listingId: row.id }
+    );
+
     res.json({ counterpartyId: accepted.requesterId });
   })
 );

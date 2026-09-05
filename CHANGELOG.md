@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.6.0] - 2026-09-05
+
+### Fixed
+- **Push notifications never actually worked**, even before this session's changes: `useNotifications()` existed but was never called anywhere in the app, and the one place that did fetch a push token (`notificationService.getPushToken()`) only ever saved it to local `AsyncStorage` — it was never sent to the backend, so no push notification could ever have been delivered to a real device. Fixed both gaps.
+  - Backend: new `pushToken` column on `users`. `POST /api/users/me/push-token` registers it. `server/src/utils/pushNotifications.ts` sends via Expo's push API — fire-and-forget, so a delivery failure (missing/invalid token, Expo's service being down) never breaks the action that triggered it.
+  - Wired into real marketplace/room events: interest received on your listing, your interest accepted, a listing marked completed (prompts a review), and being added to a shared room.
+  - Frontend: `app/_layout.tsx` now mounts a `PushNotificationSync` component for authenticated users, which calls `useNotifications()` — this is what actually requests permission and registers the token; previously the hook was simply dead code. `notificationService.registerPushToken()` sends the fetched token to the backend.
+  - Updated `docs/PRODUCT_PLAN.md` and the published plan artifact: Stage 7 now also covers push notifications.
+  - Verified: clean typecheck/lint/test, and a visual pass confirming the new `PushNotificationSync` mount doesn't break the app on web (expo-notifications logs an expected "not fully supported on web" warning there, not an error).
+
 ## [2.5.0] - 2026-09-05
 
 ### Added

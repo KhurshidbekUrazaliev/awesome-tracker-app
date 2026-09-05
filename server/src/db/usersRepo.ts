@@ -51,6 +51,16 @@ export async function updateUserPassword(id: string, passwordHash: string) {
   await db.update(users).set({ passwordHash }).where(eq(users.id, id));
 }
 
+export async function updatePushToken(id: string, pushToken: string): Promise<void> {
+  await db.update(users).set({ pushToken }).where(eq(users.id, id));
+}
+
+/** The raw push token for a user, for sending notifications — not part of PublicUser. */
+export async function getPushToken(id: string): Promise<string | null> {
+  const [row] = await db.select({ pushToken: users.pushToken }).from(users).where(eq(users.id, id)).limit(1);
+  return row?.pushToken ?? null;
+}
+
 export async function deleteUser(id: string) {
   // Conversations/messages cascade via FK ON DELETE CASCADE (see schema.ts).
   // A conversation with no participants left over is harmless — it just

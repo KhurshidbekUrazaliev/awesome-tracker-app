@@ -6,6 +6,9 @@ export const users = pgTable('users', {
   name: text('name').notNull(),
   passwordHash: text('password_hash').notNull(),
   avatar: text('avatar'),
+  // Expo push token, registered by the client after requesting notification
+  // permission. Null until the user has granted permission at least once.
+  pushToken: text('push_token'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
