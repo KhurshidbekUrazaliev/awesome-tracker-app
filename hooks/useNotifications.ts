@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import * as Notifications from 'expo-notifications';
+// Type-only: a real `import` here would load expo-notifications, which crashes on
+// import in Expo Go (see services/notificationService.ts for why).
+import type * as Notifications from 'expo-notifications';
 import notificationService from '@/services/notificationService';
 
 export function useNotifications() {

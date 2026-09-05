@@ -1,25 +1,42 @@
 import { isRunningInExpoGo } from 'expo';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from './apiClient';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+type NotificationsModule = typeof import('expo-notifications');
+
+// expo-notifications throws synchronously at import time on Android — not just when its
+// push-token APIs are called — because one of its modules registers a device-push-token
+// listener as a top-level side effect, and that listener setup is what's disallowed in
+// Expo Go since SDK 53. So the module must never be require()'d there in the first place;
+// a static `import` would run before any Expo-Go check could prevent it.
+let Notifications: NotificationsModule | undefined;
+if (!isRunningInExpoGo()) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- must be a real require(), not a static import, to avoid loading the module at all in Expo Go
+  const notifications: NotificationsModule = require('expo-notifications');
+  notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+  Notifications = notifications;
+}
+
+const NOOP_SUBSCRIPTION = { remove: () => {} };
 
 class NotificationService {
   async requestPermissions(): Promise<boolean> {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const notifications = Notifications;
+    if (!notifications) return false;
+
+    const { status: existingStatus } = await notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
+      const { status } = await notifications.requestPermissionsAsync();
       finalStatus = status;
     }
 
@@ -28,9 +45,9 @@ class NotificationService {
     }
 
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
+      await notifications.setNotificationChannelAsync('default', {
         name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
+        importance: notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
       });
@@ -40,13 +57,11 @@ class NotificationService {
   }
 
   async getPushToken(): Promise<string | null> {
-    // Remote push tokens require a development build since SDK 53 — expo-notifications
-    // throws (on Android) if getExpoPushTokenAsync is called from Expo Go.
-    if (isRunningInExpoGo()) {
-      return null;
-    }
+    // Remote push tokens need a development build — Expo Go can't provide one since SDK 53.
+    const notifications = Notifications;
+    if (!notifications) return null;
     try {
-      const token = await Notifications.getExpoPushTokenAsync();
+      const token = await notifications.getExpoPushTokenAsync();
       await AsyncStorage.setItem('pushToken', token.data);
       return token.data;
     } catch (error) {
@@ -65,28 +80,36 @@ class NotificationService {
   }
 
   async scheduleNotification(title: string, body: string, data?: any, triggerSeconds = 1) {
-    await Notifications.scheduleNotificationAsync({
+    const notifications = Notifications;
+    if (!notifications) return;
+    await notifications.scheduleNotificationAsync({
       content: {
         title,
         body,
         data,
       },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: triggerSeconds },
+      trigger: { type: notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: triggerSeconds },
     });
   }
 
   async cancelAllNotifications() {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    const notifications = Notifications;
+    if (!notifications) return;
+    await notifications.cancelAllScheduledNotificationsAsync();
   }
 
-  addNotificationReceivedListener(listener: (notification: Notifications.Notification) => void) {
-    return Notifications.addNotificationReceivedListener(listener);
+  addNotificationReceivedListener(listener: (notification: import('expo-notifications').Notification) => void) {
+    const notifications = Notifications;
+    if (!notifications) return NOOP_SUBSCRIPTION;
+    return notifications.addNotificationReceivedListener(listener);
   }
 
   addNotificationResponseReceivedListener(
-    listener: (response: Notifications.NotificationResponse) => void
+    listener: (response: import('expo-notifications').NotificationResponse) => void
   ) {
-    return Notifications.addNotificationResponseReceivedListener(listener);
+    const notifications = Notifications;
+    if (!notifications) return NOOP_SUBSCRIPTION;
+    return notifications.addNotificationResponseReceivedListener(listener);
   }
 }
 
