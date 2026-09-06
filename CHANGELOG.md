@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.16.0] - 2026-09-06
+
+### Changed
+- **New visual identity: "Harvest & Ink"**, replacing the generic violet-on-navy palette. Warm ochre accent (`primary` ramp in `tailwind.config.js`) in place of violet, a bottle-green-black dark mode (`navy` ramp) in place of navy-blue, and a Fraunces (display) + Plus Jakarta Sans (body/UI) type pairing in place of the system font. Direction was mocked up and approved before implementation (palette swatches, type specimen, and light/dark feed + detail comparisons).
+- New `components/Text.tsx` — a thin wrapper around RN's `Text` defaulting to the body typeface; all 36 files that rendered `Text` now import this instead of `react-native` directly, since there was no prior shared Text component to centralize this in. The display face is applied selectively to brand-defining spots (header wordmark, auth headlines, listing titles, profile name) rather than swept across every heading.
+- `hooks/useTheme.ts`'s raw-hex mirror (for the handful of places needing a color outside a className) updated to match the new ramps, and the handful of literal old-brand hex codes scattered across `app/`/`components/`/`modules/` (violet `#7c3aed`/`#a78bfa`/`#c4b5fd`, old navy `#6b7494`/`#1b1030`) were swapped to their new equivalents.
+
 ## [2.15.1] - 2026-09-06
 
 ### Fixed

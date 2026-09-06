@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, View } from 'react-native';
+import Text from '@/components/Text';
 import Button from '@/components/Button';
 import Loader from '@/components/Loader';
 import adminService, { type AdminReport } from '@/modules/admin/services/adminService';
@@ -101,7 +102,7 @@ export default function AdminReportsScreen() {
         <Loader fullScreen text="Loading reports…" />
       ) : error && reports.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="lock-closed-outline" size={40} color="#9CA3AF" />
+          <Ionicons name="lock-closed-outline" size={40} color="#93A08F" />
           <Text className="text-gray-500 dark:text-navy-300 mt-3 text-center">{error}</Text>
         </View>
       ) : (
@@ -114,7 +115,7 @@ export default function AdminReportsScreen() {
           )}
           ListEmptyComponent={
             <View className="items-center py-16">
-              <Ionicons name="checkmark-done-outline" size={40} color="#9CA3AF" />
+              <Ionicons name="checkmark-done-outline" size={40} color="#93A08F" />
               <Text className="text-gray-500 dark:text-navy-300 mt-3">No reports.</Text>
             </View>
           }

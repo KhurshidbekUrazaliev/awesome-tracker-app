@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+import { View, TextInput, TouchableOpacity } from 'react-native';
+import Text from '@/components/Text';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -21,7 +22,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
       <TextInput
         className="flex-1 bg-gray-100 dark:bg-navy-800 text-gray-900 dark:text-white rounded-full px-4 py-2 text-base"
         placeholder="Type a message..."
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor="#93A08F"
         value={message}
         onChangeText={setMessage}
         multiline

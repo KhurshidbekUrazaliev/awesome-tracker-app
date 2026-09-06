@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
+import Text from '@/components/Text';
 import { Stack } from 'expo-router';
 import Button from '@/components/Button';
 import LocationField from '@/components/LocationField';

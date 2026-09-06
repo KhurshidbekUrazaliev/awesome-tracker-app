@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, TextInputProps } from 'react-native';
+import { View, TextInput, TouchableOpacity, TextInputProps } from 'react-native';
+import Text from '@/components/Text';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -38,7 +39,7 @@ export default function Input({
 
         <TextInput
           className="flex-1 py-3 text-base text-gray-900 dark:text-white"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#93A08F"
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           secureTextEntry={isSecure}

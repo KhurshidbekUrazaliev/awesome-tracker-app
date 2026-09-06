@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import Text from '@/components/Text';
 import { Message } from '../store/useChatStore';
 import { formatDate } from '@/utils/formatDate';
 import { useUserStore } from '@/store/useUserStore';

@@ -8,18 +8,18 @@ export function useTheme() {
   const activeTheme = theme === 'system' ? systemColorScheme : theme;
   const isDark = activeTheme === 'dark';
 
-  // Mirrors the navy/violet scale in tailwind.config.js — for the handful of
-  // places (ActivityIndicator, StatusBar) that need a raw color instead of
-  // a className.
+  // Mirrors the navy/primary scale in tailwind.config.js ("Harvest & Ink") —
+  // for the handful of places (ActivityIndicator, StatusBar) that need a raw
+  // color instead of a className.
   const colors = {
-    background: isDark ? '#0a0e1a' : '#FFFFFF',
-    card: isDark ? '#1a2140' : '#F9FAFB',
-    border: isDark ? '#262e52' : '#E5E7EB',
-    primary: isDark ? '#a78bfa' : '#7c3aed',
+    background: isDark ? '#131d17' : '#f6f7f2',
+    card: isDark ? '#1a251e' : '#FFFFFF',
+    border: isDark ? '#2b382e' : '#dcdfd4',
+    primary: isDark ? '#e0a252' : '#b8660f',
     text: {
-      primary: isDark ? '#f4f5f9' : '#111827',
-      secondary: isDark ? '#9aa1bb' : '#6B7280',
-      tertiary: isDark ? '#6b7494' : '#9CA3AF',
+      primary: isDark ? '#eaeee5' : '#1c2620',
+      secondary: isDark ? '#9fad9f' : '#5b6a5e',
+      tertiary: isDark ? '#7a8a79' : '#8a9385',
     },
   };
 

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import Loader from '@/components/Loader';
 import { useRoomsCalendar } from '@/modules/rooms/hooks/useRoomsCalendar';
 import type { CalendarItem } from '@/modules/rooms/store/useRoomsStore';
@@ -80,7 +81,7 @@ export default function RoomsCalendarScreen() {
         <Loader fullScreen text="Loading calendar…" />
       ) : error ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="cloud-offline-outline" size={40} color="#9CA3AF" />
+          <Ionicons name="cloud-offline-outline" size={40} color="#93A08F" />
           <Text className="text-gray-500 dark:text-navy-300 mt-3 text-center">{error}</Text>
         </View>
       ) : (
@@ -91,7 +92,7 @@ export default function RoomsCalendarScreen() {
               className="w-9 h-9 rounded-full bg-white dark:bg-navy-800 items-center justify-center"
               accessibilityLabel="Previous month"
             >
-              <Ionicons name="chevron-back" size={18} color="#7c3aed" />
+              <Ionicons name="chevron-back" size={18} color="#b8660f" />
             </TouchableOpacity>
             <Text className="text-base font-bold text-gray-900 dark:text-white">{monthLabel}</Text>
             <TouchableOpacity
@@ -99,7 +100,7 @@ export default function RoomsCalendarScreen() {
               className="w-9 h-9 rounded-full bg-white dark:bg-navy-800 items-center justify-center"
               accessibilityLabel="Next month"
             >
-              <Ionicons name="chevron-forward" size={18} color="#7c3aed" />
+              <Ionicons name="chevron-forward" size={18} color="#b8660f" />
             </TouchableOpacity>
           </View>
 
@@ -155,7 +156,7 @@ export default function RoomsCalendarScreen() {
                   className="bg-white dark:bg-navy-900 rounded-xl p-4 mb-2 border border-gray-100 dark:border-white/10 flex-row items-center"
                   onPress={() => router.push(`/rooms/detail?id=${item.roomId}`)}
                 >
-                  <Ionicons name={item.type === 'event' ? 'calendar-outline' : 'alarm-outline'} size={18} color="#7c3aed" />
+                  <Ionicons name={item.type === 'event' ? 'calendar-outline' : 'alarm-outline'} size={18} color="#b8660f" />
                   <View className="ml-3 flex-1">
                     <Text className="text-sm font-semibold text-gray-900 dark:text-white">{item.title}</Text>
                     <Text className="text-xs text-gray-500 dark:text-navy-300">

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import uploadService from '@/services/uploadService';
 
 interface MultiPhotoPickerProps {
@@ -54,7 +55,7 @@ export default function MultiPhotoPicker({ value, onChange, max = 5 }: MultiPhot
             className="rounded-xl bg-gray-100 dark:bg-navy-800 items-center justify-center"
             style={{ width: 88, height: 88 }}
           >
-            <Ionicons name={isUploading ? 'hourglass-outline' : 'camera-outline'} size={22} color="#9CA3AF" />
+            <Ionicons name={isUploading ? 'hourglass-outline' : 'camera-outline'} size={22} color="#93A08F" />
           </TouchableOpacity>
         )}
       </View>

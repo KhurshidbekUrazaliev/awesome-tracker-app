@@ -3,7 +3,8 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, router } from 'expo-router';
 import React from 'react';
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Avatar from '@/components/Avatar';
 import Button from '@/components/Button';
@@ -137,7 +138,7 @@ export default function HomeScreen() {
               <Ionicons name="pulse" size={18} color="#ffffff" />
             </View>
             <Text
-              className="font-bold text-base tracking-wide"
+              className="font-display text-lg tracking-wide"
               style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
             >
               TrY
@@ -172,7 +173,7 @@ export default function HomeScreen() {
                 width: 76,
                 height: 76,
                 borderWidth: 3,
-                borderColor: isDark ? '#1b1030' : '#ffffff',
+                borderColor: isDark ? '#0d140f' : '#ffffff',
                 shadowColor: '#000',
                 shadowOpacity: 0.25,
                 shadowRadius: 10,
@@ -240,7 +241,7 @@ export default function HomeScreen() {
           style={{ paddingTop: insets.top + 10 }}
         >
           <Text
-            className="font-bold text-sm tracking-wide"
+            className="font-display text-base tracking-wide"
             style={{ color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } }}
           >
             TrY

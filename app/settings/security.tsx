@@ -1,5 +1,6 @@
 import React from 'react';
-import { ScrollView, View, Text } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import Text from '@/components/Text';
 import { Stack } from 'expo-router';
 import SecuritySettings from '@/modules/settings/components/SecuritySettings';
 

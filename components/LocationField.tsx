@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, TextInput, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import * as Location from 'expo-location';
 import geoService, { type GeoPlace } from '@/services/geoService';
 import Button from './Button';
@@ -71,7 +72,7 @@ export default function LocationField({ label, value, onChange, containerClassNa
           value={query}
           onChangeText={setQuery}
           placeholder="Or type a city"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#93A08F"
           className="flex-1 border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
           onSubmitEditing={search}
         />

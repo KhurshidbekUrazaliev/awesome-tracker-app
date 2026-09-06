@@ -1,6 +1,7 @@
 import { useColorScheme } from 'nativewind';
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, TouchableOpacityProps, View } from 'react-native';
+import { TouchableOpacity, ActivityIndicator, TouchableOpacityProps, View } from 'react-native';
+import Text from '@/components/Text';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -57,7 +58,7 @@ const Button = React.forwardRef<View, ButtonProps>(function Button({
   const disabledClass = disabled || loading ? 'opacity-50' : '';
   const widthClass = fullWidth ? 'w-full' : '';
 
-  const spinnerColor = variant === 'outline' ? (isDark ? '#a78bfa' : '#7c3aed') : '#ffffff';
+  const spinnerColor = variant === 'outline' ? (isDark ? '#e0a252' : '#b8660f') : '#ffffff';
 
   return (
     <TouchableOpacity

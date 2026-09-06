@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import type { BookedRange } from '@/modules/listings/store/useListingsStore';
 
 function dateKey(d: Date): string {
@@ -86,11 +87,11 @@ export default function RentalAvailabilityCalendar({ bookedRanges, value, onChan
     <View>
       <View className="flex-row items-center justify-between mb-3">
         <TouchableOpacity onPress={goPrevMonth} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-navy-800 items-center justify-center">
-          <Ionicons name="chevron-back" size={16} color="#7c3aed" />
+          <Ionicons name="chevron-back" size={16} color="#b8660f" />
         </TouchableOpacity>
         <Text className="text-sm font-bold text-gray-900 dark:text-white">{monthLabel}</Text>
         <TouchableOpacity onPress={goNextMonth} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-navy-800 items-center justify-center">
-          <Ionicons name="chevron-forward" size={16} color="#7c3aed" />
+          <Ionicons name="chevron-forward" size={16} color="#b8660f" />
         </TouchableOpacity>
       </View>
 

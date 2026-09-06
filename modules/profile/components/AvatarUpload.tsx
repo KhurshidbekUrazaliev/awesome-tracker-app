@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Text, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import Avatar from '@/components/Avatar';
 
 interface AvatarUploadProps {

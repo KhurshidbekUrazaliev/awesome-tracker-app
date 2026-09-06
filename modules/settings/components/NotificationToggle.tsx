@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Switch } from 'react-native';
+import { View, Switch } from 'react-native';
+import Text from '@/components/Text';
 
 interface NotificationToggleProps {
   title: string;
@@ -25,8 +26,8 @@ export default function NotificationToggle({
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: '#D1D5DB', true: '#c4b5fd' }}
-        thumbColor={value ? '#7c3aed' : '#F3F4F6'}
+        trackColor={{ false: '#D1D5DB', true: '#f0be7c' }}
+        thumbColor={value ? '#b8660f' : '#F3F4F6'}
       />
     </View>
   );

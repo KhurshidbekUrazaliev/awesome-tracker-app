@@ -1,6 +1,7 @@
 import { router, Stack } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import { useRooms } from '@/modules/rooms/hooks/useRooms';

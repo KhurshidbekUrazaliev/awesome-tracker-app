@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
-import { FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, TextInput, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import { useColorScheme } from 'nativewind';
 import Avatar from '@/components/Avatar';
 import Loader from '@/components/Loader';
@@ -44,7 +45,7 @@ function ListingCard({ item }: { item: Listing }) {
         <Text className="text-xs text-gray-400 dark:text-navy-400">{formatDate(item.createdAt, 'relative')}</Text>
       </View>
 
-      <Text className="text-base font-bold text-gray-900 dark:text-white mb-1">{item.title}</Text>
+      <Text className="font-display text-base font-semibold text-gray-900 dark:text-white mb-1">{item.title}</Text>
       <Text className="text-sm text-gray-600 dark:text-navy-300 mb-3" numberOfLines={2}>
         {item.description}
       </Text>
@@ -55,11 +56,11 @@ function ListingCard({ item }: { item: Listing }) {
           <Text className="text-xs text-gray-500 dark:text-navy-300 ml-2">{item.owner?.name ?? 'Someone'}</Text>
         </View>
         <View className="flex-row items-center">
-          <Ionicons name="pricetag-outline" size={13} color={isDark ? '#6b7494' : '#9CA3AF'} />
+          <Ionicons name="pricetag-outline" size={13} color={isDark ? '#7a8a79' : '#93A08F'} />
           <Text className="text-xs text-gray-400 dark:text-navy-400 ml-1">{item.category}</Text>
           {item.distanceKm != null && (
             <>
-              <Ionicons name="location-outline" size={13} color={isDark ? '#6b7494' : '#9CA3AF'} style={{ marginLeft: 8 }} />
+              <Ionicons name="location-outline" size={13} color={isDark ? '#7a8a79' : '#93A08F'} style={{ marginLeft: 8 }} />
               <Text className="text-xs text-gray-400 dark:text-navy-400 ml-1">{item.distanceKm.toLocaleString()} km</Text>
             </>
           )}
@@ -90,13 +91,13 @@ export default function ListingsFeed() {
     <View style={{ flex: 1 }}>
       <View className="px-6 pt-4 pb-3 bg-white dark:bg-navy-900 border-b border-gray-100 dark:border-white/10">
         <View className="flex-row items-center bg-gray-100 dark:bg-navy-800 rounded-xl px-3 mb-3">
-          <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+          <Ionicons name="search-outline" size={18} color="#93A08F" />
           <TextInput
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={submitSearch}
             placeholder="Search ideas, lessons, things to give or trade…"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#93A08F"
             className="flex-1 py-2.5 px-2 text-sm text-gray-900 dark:text-white"
             returnKeyType="search"
           />
@@ -119,7 +120,7 @@ export default function ListingsFeed() {
 
         {trendingCategories.length > 0 && (
           <View className="flex-row items-center mt-2.5">
-            <Ionicons name="trending-up-outline" size={14} color="#9CA3AF" style={{ marginRight: 6 }} />
+            <Ionicons name="trending-up-outline" size={14} color="#93A08F" style={{ marginRight: 6 }} />
             <FlatList
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -141,7 +142,7 @@ export default function ListingsFeed() {
         <Loader fullScreen text="Loading listings…" />
       ) : error && listings.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="cloud-offline-outline" size={40} color="#9CA3AF" />
+          <Ionicons name="cloud-offline-outline" size={40} color="#93A08F" />
           <Text className="text-gray-500 dark:text-navy-300 mt-3 text-center">{error}</Text>
         </View>
       ) : (
@@ -152,7 +153,7 @@ export default function ListingsFeed() {
           renderItem={({ item }) => <ListingCard item={item} />}
           ListEmptyComponent={
             <View className="items-center py-16">
-              <Ionicons name="gift-outline" size={40} color="#9CA3AF" />
+              <Ionicons name="gift-outline" size={40} color="#93A08F" />
               <Text className="text-gray-500 dark:text-navy-300 mt-3">Nothing here yet — be the first to share.</Text>
             </View>
           }

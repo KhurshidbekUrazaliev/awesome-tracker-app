@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import React from 'react';
-import { FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import Avatar from '@/components/Avatar';
 import Loader from '@/components/Loader';
 import { useBlockedUsers } from '@/modules/safety/hooks/useBlockedUsers';
@@ -16,7 +17,7 @@ export default function BlockedUsersScreen() {
         <Loader fullScreen />
       ) : error && blockedUsers.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="cloud-offline-outline" size={36} color="#9CA3AF" />
+          <Ionicons name="cloud-offline-outline" size={36} color="#93A08F" />
           <Text className="text-gray-500 dark:text-navy-300 mt-3 text-center">{error}</Text>
         </View>
       ) : (
@@ -37,7 +38,7 @@ export default function BlockedUsersScreen() {
           )}
           ListEmptyComponent={
             <View className="items-center py-16">
-              <Ionicons name="shield-checkmark-outline" size={36} color="#9CA3AF" />
+              <Ionicons name="shield-checkmark-outline" size={36} color="#93A08F" />
               <Text className="text-gray-500 dark:text-navy-300 mt-3">You haven&apos;t blocked anyone.</Text>
             </View>
           }

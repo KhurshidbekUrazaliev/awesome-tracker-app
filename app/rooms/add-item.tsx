@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import Button from '@/components/Button';
 import DateTimeField from '@/components/DateTimeField';
 import Input from '@/components/Input';
@@ -122,7 +123,7 @@ export default function AddRoomItemScreen() {
               <View key={i} className="flex-row items-center justify-between bg-gray-50 dark:bg-navy-900 rounded-lg px-3 py-2 mb-2">
                 <Text className="text-sm text-gray-800 dark:text-navy-100 flex-1">{entry.text}</Text>
                 <TouchableOpacity onPress={() => removeChecklistEntry(i)}>
-                  <Ionicons name="close" size={16} color="#9CA3AF" />
+                  <Ionicons name="close" size={16} color="#93A08F" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -132,7 +133,7 @@ export default function AddRoomItemScreen() {
                 onChangeText={setChecklistDraft}
                 onSubmitEditing={addChecklistEntry}
                 placeholder="Add a step"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#93A08F"
                 className="flex-1 border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
               />
               <Button title="Add" size="sm" onPress={addChecklistEntry} />

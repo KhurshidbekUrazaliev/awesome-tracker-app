@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router, Stack } from 'expo-router';
 import React, { useState } from 'react';
-import { FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import Avatar from '@/components/Avatar';
 import Loader from '@/components/Loader';
 import { useRooms } from '@/modules/rooms/hooks/useRooms';
@@ -25,7 +26,7 @@ function RoomCard({ room, showOwner }: { room: Room; showOwner: boolean }) {
           {room.name}
         </Text>
         <View className="flex-row items-center bg-gray-100 dark:bg-navy-800 px-2 py-1 rounded-full ml-2">
-          <Ionicons name={VISIBILITY_ICON[room.visibility]} size={12} color="#9CA3AF" />
+          <Ionicons name={VISIBILITY_ICON[room.visibility]} size={12} color="#93A08F" />
           <Text className="text-xs text-gray-500 dark:text-navy-300 ml-1">{ROOM_VISIBILITY_LABELS[room.visibility]}</Text>
         </View>
       </View>
@@ -56,7 +57,7 @@ export default function RoomsScreen() {
           headerShown: true,
           headerRight: () => (
             <TouchableOpacity onPress={() => router.push('/rooms/calendar')} accessibilityLabel="Calendar" style={{ paddingHorizontal: 8 }}>
-              <Ionicons name="calendar-outline" size={22} color="#7c3aed" />
+              <Ionicons name="calendar-outline" size={22} color="#b8660f" />
             </TouchableOpacity>
           ),
         }}
@@ -81,7 +82,7 @@ export default function RoomsScreen() {
         <Loader fullScreen text="Loading rooms…" />
       ) : error && rooms.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="cloud-offline-outline" size={40} color="#9CA3AF" />
+          <Ionicons name="cloud-offline-outline" size={40} color="#93A08F" />
           <Text className="text-gray-500 dark:text-navy-300 mt-3 text-center">{error}</Text>
         </View>
       ) : (
@@ -92,7 +93,7 @@ export default function RoomsScreen() {
           renderItem={({ item }) => <RoomCard room={item} showOwner={mode === 'discover'} />}
           ListEmptyComponent={
             <View className="items-center py-16">
-              <Ionicons name="albums-outline" size={40} color="#9CA3AF" />
+              <Ionicons name="albums-outline" size={40} color="#93A08F" />
               <Text className="text-gray-500 dark:text-navy-300 mt-3">
                 {mode === 'mine' ? "You haven't made a room yet." : 'No public rooms yet.'}
               </Text>

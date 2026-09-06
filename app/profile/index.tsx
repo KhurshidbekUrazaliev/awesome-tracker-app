@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
+import Text from '@/components/Text';
 import { Link } from 'expo-router';
 import { useUserStore } from '@/store/useUserStore';
 import { useReputation } from '@/modules/listings/hooks/useReputation';
@@ -18,7 +19,7 @@ export default function ProfileScreen() {
     <ScrollView className="flex-1 bg-gray-50 dark:bg-navy-950">
       <View className="items-center py-8 bg-white dark:bg-navy-900">
         <Avatar uri={user.avatar} name={user.name} size="xl" />
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white mt-4">{user.name}</Text>
+        <Text className="font-display text-2xl font-semibold text-gray-900 dark:text-white mt-4">{user.name}</Text>
         <Text className="text-sm text-gray-500 dark:text-navy-300">{user.email}</Text>
 
         <View className="flex-row items-center mt-3 bg-gray-50 dark:bg-navy-800 px-4 py-2 rounded-full">

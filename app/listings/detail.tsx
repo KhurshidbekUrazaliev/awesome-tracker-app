@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import Avatar from '@/components/Avatar';
 import Button from '@/components/Button';
 import Loader from '@/components/Loader';
@@ -301,7 +302,7 @@ export default function ListingDetailScreen() {
           </View>
         </View>
 
-        <Text className="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">{listing.title}</Text>
+        <Text className="font-display text-2xl font-semibold text-gray-900 dark:text-white mb-2">{listing.title}</Text>
         <Text className="text-base text-gray-700 dark:text-navy-200 leading-relaxed mb-4">{listing.description}</Text>
 
         {listing.wantInReturn && (
@@ -313,7 +314,7 @@ export default function ListingDetailScreen() {
 
         {listing.trialDays != null && (
           <View className="bg-gray-50 dark:bg-navy-900 rounded-xl p-4 mb-4 flex-row items-center">
-            <Ionicons name="time-outline" size={18} color="#7c3aed" />
+            <Ionicons name="time-outline" size={18} color="#b8660f" />
             <Text className="text-sm text-gray-800 dark:text-navy-100 ml-2">
               Try it for up to {listing.trialDays} {listing.trialDays === 1 ? 'day' : 'days'}
             </Text>
@@ -330,7 +331,7 @@ export default function ListingDetailScreen() {
                 </Text>
               )}
             </View>
-            <Ionicons name="pricetag-outline" size={20} color="#7c3aed" />
+            <Ionicons name="pricetag-outline" size={20} color="#b8660f" />
           </View>
         )}
 
@@ -345,7 +346,7 @@ export default function ListingDetailScreen() {
                 {listing.status === 'open' && listing.auctionEndsAt && ` · Ends ${formatDate(listing.auctionEndsAt, 'relative')}`}
               </Text>
             </View>
-            <Ionicons name="hammer-outline" size={20} color="#7c3aed" />
+            <Ionicons name="hammer-outline" size={20} color="#b8660f" />
           </View>
         )}
 
@@ -382,10 +383,10 @@ export default function ListingDetailScreen() {
           {!isOwner && (
             <View className="flex-row" style={{ gap: 16 }}>
               <TouchableOpacity onPress={() => setShowReportInput((v) => !v)} accessibilityLabel="Report this listing">
-                <Ionicons name="flag-outline" size={20} color="#9CA3AF" />
+                <Ionicons name="flag-outline" size={20} color="#93A08F" />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleBlock} accessibilityLabel="Block this person">
-                <Ionicons name="ban-outline" size={20} color="#9CA3AF" />
+                <Ionicons name="ban-outline" size={20} color="#93A08F" />
               </TouchableOpacity>
             </View>
           )}
@@ -398,7 +399,7 @@ export default function ListingDetailScreen() {
               value={reportReason}
               onChangeText={setReportReason}
               placeholder="Tell us what's wrong"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#93A08F"
               multiline
               className="border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-3 text-gray-900 dark:text-white mb-3"
               style={{ minHeight: 56, textAlignVertical: 'top' }}
@@ -424,7 +425,7 @@ export default function ListingDetailScreen() {
               value={message}
               onChangeText={setMessage}
               placeholder={listing.type === 'exchange' ? "What you'd trade for this" : 'Optional message'}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#93A08F"
               multiline
               className="border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-3 text-gray-900 dark:text-white mb-3"
               style={{ minHeight: 64, textAlignVertical: 'top' }}
@@ -556,7 +557,7 @@ export default function ListingDetailScreen() {
                         onChangeText={(v) => setClaimAmount(v.replace(/[^0-9.]/g, ''))}
                         placeholder="0.00"
                         keyboardType="decimal-pad"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor="#93A08F"
                         className="flex-1 border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
                       />
                       <Button title="Confirm" size="sm" onPress={() => handleCompleteBooking(booking, 'claim')} />
@@ -583,7 +584,7 @@ export default function ListingDetailScreen() {
                 value={bidAmount}
                 onChangeText={(v) => setBidAmount(v.replace(/[^0-9.]/g, ''))}
                 placeholder={`More than ${formatCents(listing.currentBidCents ?? listing.startingBidCents ?? 0)}`}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#93A08F"
                 keyboardType="decimal-pad"
                 className="flex-1 border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-3 text-gray-900 dark:text-white"
               />
@@ -660,7 +661,7 @@ export default function ListingDetailScreen() {
               value={comment}
               onChangeText={setComment}
               placeholder="How did it go? (optional)"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#93A08F"
               multiline
               className="border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-3 text-gray-900 dark:text-white my-3"
               style={{ minHeight: 64, textAlignVertical: 'top' }}

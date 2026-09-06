@@ -1,6 +1,7 @@
 import { useColorScheme } from 'nativewind';
 import React from 'react';
-import { View, ActivityIndicator, Text, ViewProps } from 'react-native';
+import { View, ActivityIndicator, ViewProps } from 'react-native';
+import Text from '@/components/Text';
 
 interface LoaderProps extends ViewProps {
   size?: 'small' | 'large';
@@ -18,7 +19,7 @@ export default function Loader({
   ...props
 }: LoaderProps) {
   const { colorScheme } = useColorScheme();
-  const spinnerColor = color ?? (colorScheme === 'dark' ? '#a78bfa' : '#7c3aed');
+  const spinnerColor = color ?? (colorScheme === 'dark' ? '#e0a252' : '#b8660f');
 
   const content = (
     <>

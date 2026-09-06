@@ -1,4 +1,16 @@
+import {
+  useFonts,
+  Fraunces_500Medium_Italic,
+  Fraunces_600SemiBold,
+} from '@expo-google-fonts/fraunces';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme as useNativewindColorScheme } from 'nativewind';
 import { useEffect } from 'react';
@@ -7,6 +19,8 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useTheme } from '@/hooks/useTheme';
 import { useUserStore } from '@/store/useUserStore';
 import '../global.css';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 /** Keeps NativeWind's `dark:` variant classes in sync with useThemeStore's persisted choice. */
 function ThemeSync() {
@@ -29,6 +43,20 @@ function PushNotificationSync() {
 export default function RootLayout() {
   const { isDark, colors } = useTheme();
   const { isAuthenticated } = useUserStore();
+  const [fontsLoaded] = useFonts({
+    Fraunces_500Medium_Italic,
+    Fraunces_600SemiBold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>

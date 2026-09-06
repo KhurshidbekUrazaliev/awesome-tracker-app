@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Image, Text, ViewProps } from 'react-native';
+import { View, Image, ViewProps } from 'react-native';
+import Text from '@/components/Text';
 
 interface AvatarProps extends ViewProps {
   uri?: string;

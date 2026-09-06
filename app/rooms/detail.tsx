@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Linking, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, TextInput, TouchableOpacity, View } from 'react-native';
+import Text from '@/components/Text';
 import Button from '@/components/Button';
 import Loader from '@/components/Loader';
 import PhotoGallery from '@/components/PhotoGallery';
@@ -35,14 +36,14 @@ function ItemCard({
     <View className="bg-white dark:bg-navy-900 rounded-2xl p-4 mb-3 border border-gray-100 dark:border-white/10">
       <View className="flex-row items-start justify-between mb-1">
         <View className="flex-row items-center flex-1">
-          <Ionicons name={ITEM_ICON[item.type]} size={16} color="#7c3aed" />
+          <Ionicons name={ITEM_ICON[item.type]} size={16} color="#b8660f" />
           <Text className="text-base font-bold text-gray-900 dark:text-white ml-2 flex-1" numberOfLines={1}>
             {item.title}
           </Text>
         </View>
         {isOwner && (
           <TouchableOpacity onPress={onDelete} accessibilityLabel="Delete item">
-            <Ionicons name="trash-outline" size={16} color="#9CA3AF" />
+            <Ionicons name="trash-outline" size={16} color="#93A08F" />
           </TouchableOpacity>
         )}
       </View>
@@ -78,7 +79,7 @@ function ItemCard({
               disabled={!isOwner}
               className="flex-row items-center py-1.5"
             >
-              <Ionicons name={entry.done ? 'checkbox' : 'square-outline'} size={18} color={entry.done ? '#7c3aed' : '#9CA3AF'} />
+              <Ionicons name={entry.done ? 'checkbox' : 'square-outline'} size={18} color={entry.done ? '#b8660f' : '#93A08F'} />
               <Text
                 className={`text-sm ml-2 ${entry.done ? 'text-gray-400 dark:text-navy-400 line-through' : 'text-gray-800 dark:text-navy-100'}`}
               >
@@ -150,7 +151,7 @@ export default function RoomDetailScreen() {
                 value={memberEmail}
                 onChangeText={setMemberEmail}
                 placeholder="person@example.com"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#93A08F"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 className="flex-1 border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
