@@ -439,6 +439,9 @@ router.get(
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      // Managed Payments makes Stripe the merchant of record, which conflicts with
+      // this platform's "collect then transfer" model (see server/src/utils/stripe.ts).
+      managed_payments: { enabled: false },
       line_items: [
         {
           price_data: {
