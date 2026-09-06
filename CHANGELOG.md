@@ -2,12 +2,20 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.13.1] - 2026-09-06
+
+### Fixed
+- **Stripe Connect onboarding rejected native return/refresh URLs.** Account Links (unlike Checkout Sessions) require real `https://` URLs — a `try://settings` custom scheme from `Linking.createURL()` failed with `return_url_invalid`. Native now uses the deployed web origin instead.
+- **Rental Checkout Sessions failed on newer Stripe accounts** with "the product tax code is missing" — those accounts default to Managed Payments (Stripe as merchant of record), which is incompatible with this app's collect-then-transfer model. Explicitly disabled (`managed_payments: { enabled: false }`) on the rental Checkout Session.
+
+### Verified
+- **Stage 4 end-to-end, with real Stripe test-mode transactions**: rental listing → booking request/accept → hosted Stripe Checkout payment (test card) → webhook-confirmed booking, all working live. The final payout step (transfer + deposit refund) correctly rejects with `insufficient_capabilities_for_transfer` until a connected account finishes bank-account linking — expected Stripe behavior, not a bug, and unrelated to the code path itself.
+
 ## [2.13.0] - 2026-09-06
 
 ### Added
 - **Stage 4: rental listings with Stripe Connect** — the payment provider decision that had blocked this stage since the project began is now made (Stripe Connect, confirmed in the user's dashboard). New `rental` listing type with per-day pricing and an optional refundable deposit; a dedicated `rentalBookings` table tracks each booking's own lifecycle (`requested` → `accepted` → `confirmed` (paid) → `completed`) separately from the listing itself, since a rental listing stays open indefinitely for repeat bookings — a deliberate deviation from how every other listing type works. New `RentalAvailabilityCalendar` component for date-range selection. Stripe Connect Express onboarding lives under a new "Payouts" row in Settings; a new webhook route confirms payment and tracks onboarding completion. On completion, the owner is paid out (minus a configurable `PLATFORM_FEE_PERCENT`, defaulting to 0) and the deposit is refunded or partially claimed, trust-based with no arbitration UI. New migration `0007_melted_king_cobra.sql`.
   - Known follow-up: rentals can't be reviewed yet (the existing review flow triggers off `listing.status === 'completed'`, which a rental listing never reaches by design).
-  - Pending: end-to-end verification against real Stripe test-mode keys, once added to `server/.env` and Render.
 
 ## [2.12.0] - 2026-09-06
 
