@@ -63,6 +63,17 @@ export default function ListingDetailScreen() {
   } = useListingDetail(id);
   const isRental = listing?.type === 'rental';
   const isAuction = listing?.type === 'auction';
+  const isPhysicalListing = !!listing && ['give_away', 'exchange', 'trial', 'rental', 'auction'].includes(listing.type);
+  // Mirrors the server's checkTransactionDistance (routes/listings.ts): null distanceKm on a
+  // physical listing means the viewer hasn't set their own location, not that it's nearby.
+  const locationBlockMessage =
+    listing && isPhysicalListing
+      ? listing.distanceKm == null
+        ? 'Set your location in Settings before requesting, booking, or bidding on physical items.'
+        : listing.distanceKm > (listing.maxTransactionDistanceKm ?? 75)
+        ? `This listing is ${listing.distanceKm.toLocaleString()} km away — too far for in-person pickup (max ${listing.maxTransactionDistanceKm ?? 75} km).`
+        : null
+      : null;
   const {
     bookings,
     bookedRanges,
@@ -347,6 +358,15 @@ export default function ListingDetailScreen() {
               <Text className="text-xs text-gray-600 dark:text-navy-300">#{tag}</Text>
             </View>
           ))}
+          {(listing.location?.city || listing.location?.country) && (
+            <View className="bg-gray-100 dark:bg-navy-800 px-2.5 py-1 rounded-full flex-row items-center">
+              <Ionicons name="location-outline" size={12} color="#6B7280" />
+              <Text className="text-xs text-gray-600 dark:text-navy-300 ml-1">
+                {[listing.location.city, listing.location.country].filter(Boolean).join(', ')}
+                {listing.distanceKm != null && ` · ${listing.distanceKm.toLocaleString()} km away`}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View className="flex-row items-center justify-between mb-3 pb-6 border-b border-gray-100 dark:border-white/10">
@@ -395,7 +415,7 @@ export default function ListingDetailScreen() {
         {actionError && <Text className="text-sm text-red-500 mb-4">{actionError}</Text>}
 
         {/* Non-owner: express interest / propose a trade */}
-        {!isRental && !isAuction && !isOwner && listing.status === 'open' && (
+        {!isRental && !isAuction && !isOwner && listing.status === 'open' && !locationBlockMessage && (
           <View>
             <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">
               {listing.type === 'exchange' ? 'Propose what you can offer' : 'Say a little about yourself (optional)'}
@@ -415,6 +435,13 @@ export default function ListingDetailScreen() {
               loading={sending}
               fullWidth
             />
+          </View>
+        )}
+
+        {/* Non-owner, physical listing: too far away or no location set */}
+        {!isRental && !isAuction && !isOwner && listing.status === 'open' && locationBlockMessage && (
+          <View className="bg-gray-50 dark:bg-navy-900 rounded-xl p-4">
+            <Text className="text-sm text-gray-600 dark:text-navy-300">{locationBlockMessage}</Text>
           </View>
         )}
 
@@ -463,6 +490,13 @@ export default function ListingDetailScreen() {
                 {myActiveBooking.status === 'accepted' && (
                   <Button title="Pay Now" onPress={() => handlePayForBooking(myActiveBooking.id)} fullWidth />
                 )}
+              </View>
+            );
+          }
+          if (locationBlockMessage) {
+            return (
+              <View className="bg-gray-50 dark:bg-navy-900 rounded-xl p-4">
+                <Text className="text-sm text-gray-600 dark:text-navy-300">{locationBlockMessage}</Text>
               </View>
             );
           }
@@ -541,7 +575,7 @@ export default function ListingDetailScreen() {
         )}
 
         {/* Non-owner: place a bid */}
-        {isAuction && !isOwner && listing.status === 'open' && (
+        {isAuction && !isOwner && listing.status === 'open' && !locationBlockMessage && (
           <View>
             <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">Your bid</Text>
             <View className="flex-row items-center" style={{ gap: 8 }}>
@@ -555,6 +589,13 @@ export default function ListingDetailScreen() {
               />
               <Button title="Place Bid" onPress={handlePlaceBid} loading={isBidding} disabled={!bidAmount} />
             </View>
+          </View>
+        )}
+
+        {/* Non-owner, auction: too far away or no location set */}
+        {isAuction && !isOwner && listing.status === 'open' && locationBlockMessage && (
+          <View className="bg-gray-50 dark:bg-navy-900 rounded-xl p-4">
+            <Text className="text-sm text-gray-600 dark:text-navy-300">{locationBlockMessage}</Text>
           </View>
         )}
 

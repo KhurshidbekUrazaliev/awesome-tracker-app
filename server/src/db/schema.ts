@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, primaryKey, index, integer, jsonb, boolean, date } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, primaryKey, index, integer, jsonb, boolean, date, doublePrecision } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -6,6 +6,15 @@ export const users = pgTable('users', {
   name: text('name').notNull(),
   passwordHash: text('password_hash').notNull(),
   avatar: text('avatar'),
+  // Home location, set by the user in Settings. Powers "near me" browsing and
+  // is the fallback location for listings that don't set their own. Never
+  // exposed to other users as raw coordinates — see toPublicUser.
+  locationLat: doublePrecision('location_lat'),
+  locationLng: doublePrecision('location_lng'),
+  locationCity: text('location_city'),
+  locationRegion: text('location_region'),
+  locationCountry: text('location_country'),
+  locationCountryCode: text('location_country_code'),
   // Expo push token, registered by the client after requesting notification
   // permission. Null until the user has granted permission at least once.
   pushToken: text('push_token'),
@@ -75,6 +84,18 @@ export const listings = pgTable(
     category: text('category').notNull(),
     tags: text('tags').array().notNull().default([]),
     media: text('media').array().notNull().default([]),
+    // Where this listing physically is — required for the 5 physical types
+    // (give_away/exchange/trial/rental/auction) so a distance check can run
+    // before a transaction starts; not required for idea/lesson. Defaults to
+    // the owner's profile location at creation but can be overridden (the
+    // item may be at a storage unit, etc.). Never exposed to other users as
+    // raw coordinates — see toPublicListing.
+    locationLat: doublePrecision('location_lat'),
+    locationLng: doublePrecision('location_lng'),
+    locationCity: text('location_city'),
+    locationRegion: text('location_region'),
+    locationCountry: text('location_country'),
+    locationCountryCode: text('location_country_code'),
     // Only meaningful for type = 'exchange': what the owner wants in return.
     wantInReturn: text('want_in_return'),
     // Only meaningful for type = 'trial': how many days the borrower gets to try it.

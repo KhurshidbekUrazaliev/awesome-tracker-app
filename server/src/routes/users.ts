@@ -19,6 +19,12 @@ const upload = multer({
 const updateProfileSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   avatar: z.string().max(2048).optional(),
+  locationLat: z.number().min(-90).max(90).optional(),
+  locationLng: z.number().min(-180).max(180).optional(),
+  locationCity: z.string().trim().max(120).optional(),
+  locationRegion: z.string().trim().max(120).optional(),
+  locationCountry: z.string().trim().max(120).optional(),
+  locationCountryCode: z.string().trim().length(2).optional(),
 });
 
 router.get(
@@ -26,7 +32,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await findUserById(req.userId!);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(toPublicUser(user));
+    res.json(toPublicUser(user, true));
   })
 );
 
@@ -47,9 +53,15 @@ router.patch(
       return res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid input' });
     }
 
-    const updates: { name?: string; avatar?: string } = {};
+    const updates: Parameters<typeof updateUserProfile>[1] = {};
     if (parsed.data.name) updates.name = parsed.data.name;
     if (parsed.data.avatar) updates.avatar = parsed.data.avatar;
+    if (parsed.data.locationLat !== undefined) updates.locationLat = parsed.data.locationLat;
+    if (parsed.data.locationLng !== undefined) updates.locationLng = parsed.data.locationLng;
+    if (parsed.data.locationCity !== undefined) updates.locationCity = parsed.data.locationCity;
+    if (parsed.data.locationRegion !== undefined) updates.locationRegion = parsed.data.locationRegion;
+    if (parsed.data.locationCountry !== undefined) updates.locationCountry = parsed.data.locationCountry;
+    if (parsed.data.locationCountryCode !== undefined) updates.locationCountryCode = parsed.data.locationCountryCode;
 
     const user = await updateUserProfile(req.userId!, updates);
     if (!user) return res.status(404).json({ message: 'User not found' });

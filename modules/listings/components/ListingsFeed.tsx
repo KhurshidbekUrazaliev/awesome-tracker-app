@@ -57,6 +57,12 @@ function ListingCard({ item }: { item: Listing }) {
         <View className="flex-row items-center">
           <Ionicons name="pricetag-outline" size={13} color={isDark ? '#6b7494' : '#9CA3AF'} />
           <Text className="text-xs text-gray-400 dark:text-navy-400 ml-1">{item.category}</Text>
+          {item.distanceKm != null && (
+            <>
+              <Ionicons name="location-outline" size={13} color={isDark ? '#6b7494' : '#9CA3AF'} style={{ marginLeft: 8 }} />
+              <Text className="text-xs text-gray-400 dark:text-navy-400 ml-1">{item.distanceKm.toLocaleString()} km</Text>
+            </>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -78,6 +84,7 @@ export default function ListingsFeed() {
   const submitSearch = () => search({ ...filters, q: query.trim() || undefined });
   const toggleCategory = (category: string) =>
     search({ ...filters, category: filters.category === category ? undefined : category });
+  const toggleNearMe = () => search({ ...filters, sortByDistance: !filters.sortByDistance });
 
   return (
     <View style={{ flex: 1 }}>
@@ -107,6 +114,7 @@ export default function ListingsFeed() {
               onPress={() => applyType(type)}
             />
           )}
+          ListFooterComponent={<FilterChip label="📍 Near me" active={!!filters.sortByDistance} onPress={toggleNearMe} />}
         />
 
         {trendingCategories.length > 0 && (

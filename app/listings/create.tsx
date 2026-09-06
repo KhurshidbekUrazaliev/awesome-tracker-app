@@ -4,9 +4,17 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Button from '@/components/Button';
 import DateTimeField from '@/components/DateTimeField';
 import Input from '@/components/Input';
+import LocationField from '@/components/LocationField';
 import MultiPhotoPicker from '@/components/MultiPhotoPicker';
 import { useListings } from '@/modules/listings/hooks/useListings';
 import { LISTING_TYPE_LABELS, LISTING_TYPES, type ListingType } from '@/modules/listings/store/useListingsStore';
+import type { GeoPlace } from '@/services/geoService';
+import { useUserStore } from '@/store/useUserStore';
+
+// The 5 types that involve an in-person handoff -- these need a resolved
+// location before they can accept requests/bookings/bids (see server-side
+// checkTransactionDistance in routes/listings.ts). idea/lesson are exempt.
+const PHYSICAL_TYPES: ListingType[] = ['give_away', 'exchange', 'trial', 'rental', 'auction'];
 
 /** "$12.50" or "12.5" -> 1250 cents. Returns null for empty/invalid input. */
 function dollarsToCents(value: string): number | null {
@@ -17,7 +25,20 @@ function dollarsToCents(value: string): number | null {
 
 export default function CreateListingScreen() {
   const { createListing } = useListings();
+  const { user } = useUserStore();
   const [type, setType] = useState<ListingType>('idea');
+  const [location, setLocation] = useState<GeoPlace | null>(
+    user?.location?.lat != null && user?.location?.lng != null
+      ? {
+          lat: user.location.lat,
+          lng: user.location.lng,
+          city: user.location.city,
+          region: user.location.region,
+          country: user.location.country,
+          countryCode: user.location.countryCode,
+        }
+      : null
+  );
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -61,6 +82,10 @@ export default function CreateListingScreen() {
       setError('Pick an auction deadline in the future.');
       return;
     }
+    if (PHYSICAL_TYPES.includes(type) && !location) {
+      setError('Set a location for this listing — use your current location or search for a city.');
+      return;
+    }
     try {
       setIsSubmitting(true);
       setError(null);
@@ -80,6 +105,12 @@ export default function CreateListingScreen() {
         depositAmountCents: type === 'rental' && depositAmountCents ? depositAmountCents : undefined,
         startingBidCents: type === 'auction' ? startingBidCents! : undefined,
         auctionEndsAt: type === 'auction' ? auctionEndsAt!.toISOString() : undefined,
+        locationLat: location?.lat,
+        locationLng: location?.lng,
+        locationCity: location?.city,
+        locationRegion: location?.region,
+        locationCountry: location?.country,
+        locationCountryCode: location?.countryCode,
       });
       router.replace(`/listings/detail?id=${listing.id}`);
     } catch (err: any) {
@@ -195,6 +226,10 @@ export default function CreateListingScreen() {
               containerClassName="mb-4"
             />
           </>
+        )}
+
+        {PHYSICAL_TYPES.includes(type) && (
+          <LocationField label="Where is this item?" value={location} onChange={setLocation} containerClassName="mb-4" />
         )}
 
         <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">Photos (optional, up to 5)</Text>

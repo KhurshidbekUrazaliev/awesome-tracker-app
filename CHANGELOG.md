@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.15.0] - 2026-09-06
+
+### Added
+- **Location & proximity enforcement (Stage 8)**: users and listings now carry a real location (lat/lng + city/region/country), and the 5 physical-handoff listing types (give_away/exchange/trial/rental/auction) require one before a request/booking/bid can go through — blocked with a clear message if the two parties are over 75km apart (configurable via `MAX_TRANSACTION_DISTANCE_KM`) or if either side hasn't set a location. Distance enforcement, deliberately, not a country check — correctly blocks continent-scale distances without incorrectly blocking legitimate near-border meetups. Geocoding via Nominatim (OpenStreetMap), free/no API key, with a server-wide outbound throttle and cache so as not to violate its usage policy. New `components/LocationField.tsx`/`.web.tsx` (native GPS via `expo-location`, web via `navigator.geolocation`, both with a manual city-search fallback), a new Settings → Location screen, and a "Near me" distance-sort chip on the browse feed. Raw coordinates are never exposed to anyone but their own owner — everyone else gets a city/country summary plus a computed distance. New migration `0009_regular_captain_cross.sql`.
+
 ## [2.14.1] - 2026-09-06
 
 ### Fixed

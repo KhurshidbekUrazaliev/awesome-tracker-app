@@ -1,11 +1,21 @@
 import { and, desc, eq, ilike, lte, notInArray, or, sql } from 'drizzle-orm';
 import { randomUUID as uuid } from 'node:crypto';
 import { db } from './client';
+import { type LocationInput, type LocationSummary, toLocationSummary } from './locationFields';
 import { auctionBids, listingInterests, listings, users } from './schema';
-import { toPublicUser, type PublicUser } from './usersRepo';
+import { getUserLocation, toPublicUser, type PublicUser } from './usersRepo';
+import { haversineDistanceKm } from '../utils/geo';
 
 export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial', 'rental', 'auction'] as const;
 export type ListingType = (typeof LISTING_TYPES)[number];
+
+// The 5 types that involve an in-person physical handoff — these need a
+// resolved location and are subject to the distance check. idea/lesson have
+// no transaction/completion state (see docs/PRODUCT_PLAN.md) and are exempt.
+export const PHYSICAL_LISTING_TYPES = ['give_away', 'exchange', 'trial', 'rental', 'auction'] as const;
+export function isPhysicalListingType(type: string): boolean {
+  return (PHYSICAL_LISTING_TYPES as readonly string[]).includes(type);
+}
 
 export interface PublicListing {
   id: string;
@@ -26,6 +36,9 @@ export interface PublicListing {
   currentBidCents?: number;
   currentBidderId?: string;
   auctionPaymentComplete?: boolean;
+  location?: LocationSummary;
+  /** This viewer's distance from the listing, in whole km — only present when the viewer has a location set. */
+  distanceKm?: number;
   currency: string;
   status: 'open' | 'pending' | 'completed' | 'closed';
   createdAt: string;
@@ -51,7 +64,16 @@ export interface PublicInterest {
   createdAt: string;
 }
 
-function toPublicListing(row: typeof listings.$inferSelect, owner?: typeof users.$inferSelect): PublicListing {
+function toPublicListing(
+  row: typeof listings.$inferSelect,
+  owner?: typeof users.$inferSelect,
+  opts?: { includeCoords?: boolean; viewerLat?: number; viewerLng?: number }
+): PublicListing {
+  const distanceKm =
+    opts?.viewerLat != null && opts?.viewerLng != null && row.locationLat != null && row.locationLng != null
+      ? Math.round(haversineDistanceKm(opts.viewerLat, opts.viewerLng, row.locationLat, row.locationLng))
+      : undefined;
+
   return {
     id: row.id,
     ownerId: row.ownerId,
@@ -71,6 +93,8 @@ function toPublicListing(row: typeof listings.$inferSelect, owner?: typeof users
     currentBidCents: row.currentBidCents ?? undefined,
     currentBidderId: row.currentBidderId ?? undefined,
     auctionPaymentComplete: row.stripePaymentIntentId != null,
+    location: toLocationSummary(row, !!opts?.includeCoords),
+    distanceKm,
     currency: row.currency,
     status: row.status as PublicListing['status'],
     createdAt: row.createdAt.toISOString(),
@@ -108,9 +132,13 @@ export interface ListingFilters {
   status?: PublicListing['status'];
   /** Owner ids to exclude — used to hide listings from users the viewer has blocked. */
   excludeOwnerIds?: string[];
+  /** Server-derived from the authenticated caller, like excludeOwnerIds — never client-supplied. */
+  viewerId?: string;
+  /** Sort by distance from the viewer instead of recency/relevance. No-op if the viewer has no location set. */
+  sortByDistance?: boolean;
 }
 
-/** Browse/search open listings. Ranked by relevance when searching, newest first otherwise. */
+/** Browse/search open listings. Ranked by relevance when searching, newest first otherwise (or by distance, see sortByDistance). */
 export async function listListings(filters: ListingFilters): Promise<PublicListing[]> {
   const conditions = [eq(listings.status, filters.status ?? 'open')];
   if (filters.type) conditions.push(eq(listings.type, filters.type));
@@ -137,7 +165,25 @@ export async function listListings(filters: ListingFilters): Promise<PublicListi
     .where(and(...conditions))
     .orderBy(...(relevance ? [desc(relevance)] : []), desc(listings.createdAt));
 
-  return rows.map((r) => toPublicListing(r.listings, r.users));
+  const viewerLoc = filters.viewerId ? await getUserLocation(filters.viewerId) : null;
+  const mapped = rows.map((r) =>
+    toPublicListing(r.listings, r.users, {
+      includeCoords: filters.viewerId != null && r.listings.ownerId === filters.viewerId,
+      viewerLat: viewerLoc?.lat,
+      viewerLng: viewerLoc?.lng,
+    })
+  );
+
+  if (filters.sortByDistance && viewerLoc) {
+    // Listings with no location sort last rather than erroring or vanishing.
+    return [...mapped].sort((a, b) => {
+      if (a.distanceKm == null && b.distanceKm == null) return 0;
+      if (a.distanceKm == null) return 1;
+      if (b.distanceKm == null) return -1;
+      return a.distanceKm - b.distanceKm;
+    });
+  }
+  return mapped;
 }
 
 export interface TrendingCategory {
@@ -172,17 +218,22 @@ export async function countCompletedListingsByType(ownerId: string): Promise<Rec
 
 export async function listListingsByOwner(ownerId: string): Promise<PublicListing[]> {
   const rows = await db.select().from(listings).where(eq(listings.ownerId, ownerId)).orderBy(desc(listings.createdAt));
-  return rows.map((r) => toPublicListing(r));
+  return rows.map((r) => toPublicListing(r, undefined, { includeCoords: true }));
 }
 
-export async function getListingById(id: string): Promise<PublicListing | undefined> {
+/** `viewerId` gates raw-coordinate exposure (owner-only) and computes distanceKm for anyone else with a location set. */
+export async function getListingById(id: string, viewerId?: string): Promise<PublicListing | undefined> {
   const [row] = await db
     .select()
     .from(listings)
     .innerJoin(users, eq(listings.ownerId, users.id))
     .where(eq(listings.id, id))
     .limit(1);
-  return row ? toPublicListing(row.listings, row.users) : undefined;
+  if (!row) return undefined;
+
+  const includeCoords = viewerId != null && row.listings.ownerId === viewerId;
+  const viewerLoc = viewerId && !includeCoords ? await getUserLocation(viewerId) : null;
+  return toPublicListing(row.listings, row.users, { includeCoords, viewerLat: viewerLoc?.lat, viewerLng: viewerLoc?.lng });
 }
 
 export async function findListingRowById(id: string) {
@@ -190,7 +241,7 @@ export async function findListingRowById(id: string) {
   return row;
 }
 
-export interface CreateListingInput {
+export interface CreateListingInput extends LocationInput {
   id: string;
   ownerId: string;
   type: ListingType;
@@ -213,10 +264,10 @@ export async function createListing(input: CreateListingInput): Promise<PublicLi
     .insert(listings)
     .values({ ...input, createdAt: now, updatedAt: now })
     .returning();
-  return toPublicListing(row);
+  return toPublicListing(row, undefined, { includeCoords: true });
 }
 
-export interface UpdateListingInput {
+export interface UpdateListingInput extends LocationInput {
   title?: string;
   description?: string;
   category?: string;
@@ -232,7 +283,7 @@ export async function updateListing(id: string, updates: UpdateListingInput): Pr
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(listings.id, id))
     .returning();
-  return row ? toPublicListing(row) : undefined;
+  return row ? toPublicListing(row, undefined, { includeCoords: true }) : undefined;
 }
 
 export async function setListingStatus(id: string, status: PublicListing['status']): Promise<void> {

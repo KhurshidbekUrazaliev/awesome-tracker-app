@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useUserStore, type User } from '@/store/useUserStore';
-import profileService from '../services/profileService';
+import { useUserStore } from '@/store/useUserStore';
+import profileService, { type UpdateProfileInput } from '../services/profileService';
 import uploadService from '@/services/uploadService';
 
 export function useProfile() {
@@ -8,7 +8,7 @@ export function useProfile() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const updateProfile = async (data: Partial<User>) => {
+  const updateProfile = async (data: UpdateProfileInput) => {
     try {
       setIsLoading(true);
       setError(null);

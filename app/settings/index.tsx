@@ -84,6 +84,13 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </Link>
 
+          <Link href="/settings/location" asChild>
+            <TouchableOpacity className="bg-white dark:bg-navy-800 p-4 rounded-lg shadow-sm mb-2">
+              <Text className="text-base font-medium text-gray-900 dark:text-white">📍 Location</Text>
+              <Text className="text-sm text-gray-500 dark:text-navy-300 mt-1">Where your listings are, for nearby matching</Text>
+            </TouchableOpacity>
+          </Link>
+
           <PayoutsRow />
         </View>
 

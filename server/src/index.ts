@@ -11,6 +11,7 @@ import { logger } from './logger';
 import adminRoutes from './routes/admin';
 import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
+import geoRoutes from './routes/geo';
 import listingRoutes from './routes/listings';
 import paymentRoutes from './routes/payments';
 import reviewRoutes from './routes/reviews';
@@ -89,6 +90,7 @@ app.get('/api/ready', async (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/geo', geoRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/payments', paymentRoutes);

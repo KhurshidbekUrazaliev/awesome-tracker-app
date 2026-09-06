@@ -64,6 +64,13 @@
       "when": 1788683165384,
       "tag": "0008_needy_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788694292315,
+      "tag": "0009_regular_captain_cross",
+      "breakpoints": true
     }
   ]
 }

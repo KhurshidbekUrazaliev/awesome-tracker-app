@@ -42,6 +42,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         icon: './assets/notification-icon.png',
         color: '#ffffff'
       }
+    ],
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission: 'TrY uses your location to show how far away listings are and confirm in-person pickup is realistic.'
+      }
     ]
   ],
   scheme: 'try',

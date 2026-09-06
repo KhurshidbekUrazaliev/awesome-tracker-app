@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from './client';
+import { type LocationInput, type LocationSummary, toLocationSummary } from './locationFields';
 import { users } from './schema';
 
 export interface PublicUser {
@@ -7,15 +8,18 @@ export interface PublicUser {
   email: string;
   name: string;
   avatar?: string;
+  location?: LocationSummary;
   createdAt: string;
 }
 
-function toPublicUser(row: typeof users.$inferSelect): PublicUser {
+/** `includeCoords` should be true only when the caller is this user themselves (e.g. their own profile edit screen). */
+function toPublicUser(row: typeof users.$inferSelect, includeCoords = false): PublicUser {
   return {
     id: row.id,
     email: row.email,
     name: row.name,
     avatar: row.avatar ?? undefined,
+    location: toLocationSummary(row, includeCoords),
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -42,9 +46,9 @@ export async function createUser(input: { id: string; email: string; name: strin
   return toPublicUser(row);
 }
 
-export async function updateUserProfile(id: string, updates: { name?: string; avatar?: string }) {
+export async function updateUserProfile(id: string, updates: { name?: string; avatar?: string } & LocationInput) {
   const [row] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
-  return row ? toPublicUser(row) : undefined;
+  return row ? toPublicUser(row, true) : undefined;
 }
 
 export async function updateUserPassword(id: string, passwordHash: string) {
@@ -53,6 +57,41 @@ export async function updateUserPassword(id: string, passwordHash: string) {
 
 export async function updatePushToken(id: string, pushToken: string): Promise<void> {
   await db.update(users).set({ pushToken }).where(eq(users.id, id));
+}
+
+/** A user's raw coordinates, for distance checks — never exposed directly to other users (see toPublicUser). */
+export async function getUserLocation(id: string): Promise<{ lat: number; lng: number } | null> {
+  const [row] = await db
+    .select({ lat: users.locationLat, lng: users.locationLng })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return row?.lat != null && row?.lng != null ? { lat: row.lat, lng: row.lng } : null;
+}
+
+/** A user's full location, for defaulting a new listing's location to the owner's profile location. */
+export async function getUserLocationFull(id: string): Promise<LocationInput | null> {
+  const [row] = await db
+    .select({
+      locationLat: users.locationLat,
+      locationLng: users.locationLng,
+      locationCity: users.locationCity,
+      locationRegion: users.locationRegion,
+      locationCountry: users.locationCountry,
+      locationCountryCode: users.locationCountryCode,
+    })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  if (!row || row.locationLat == null || row.locationLng == null) return null;
+  return {
+    locationLat: row.locationLat,
+    locationLng: row.locationLng,
+    locationCity: row.locationCity ?? undefined,
+    locationRegion: row.locationRegion ?? undefined,
+    locationCountry: row.locationCountry ?? undefined,
+    locationCountryCode: row.locationCountryCode ?? undefined,
+  };
 }
 
 /** The raw Stripe Connect account id for a user, if any — not part of PublicUser. */

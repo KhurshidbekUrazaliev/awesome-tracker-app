@@ -5,6 +5,7 @@ export interface ListingFilters {
   type?: ListingType;
   category?: string;
   q?: string;
+  sortByDistance?: boolean;
 }
 
 export interface CreateListingInput {
@@ -20,6 +21,12 @@ export interface CreateListingInput {
   depositAmountCents?: number;
   startingBidCents?: number;
   auctionEndsAt?: string;
+  locationLat?: number;
+  locationLng?: number;
+  locationCity?: string;
+  locationRegion?: string;
+  locationCountry?: string;
+  locationCountryCode?: string;
 }
 
 export type BadgeId = 'generous_giver' | 'mentor' | 'trusted_trader' | 'five_star';

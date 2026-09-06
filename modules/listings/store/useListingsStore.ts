@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { LocationSummary } from '@/services/geoService';
 import type { User as PublicUser } from '@/store/useUserStore';
 
 export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial', 'rental', 'auction'] as const;
@@ -33,6 +34,10 @@ export interface Listing {
   currentBidCents?: number;
   currentBidderId?: string;
   auctionPaymentComplete?: boolean;
+  location?: LocationSummary;
+  distanceKm?: number;
+  /** Only present on GET /listings/:id — the configured max distance for physical transactions. */
+  maxTransactionDistanceKm?: number;
   currency: string;
   status: 'open' | 'pending' | 'completed' | 'closed';
   createdAt: string;

@@ -10,6 +10,7 @@ import {
   findInterestById,
   findListingRowById,
   getListingById,
+  isPhysicalListingType,
   LISTING_TYPES,
   listBidsForListing,
   listInterestsForListing,
@@ -33,12 +34,40 @@ import {
   setBookingStatus,
   completeBooking as completeBookingRow,
 } from '../db/rentalBookingsRepo';
+import { type LocationInput } from '../db/locationFields';
 import { listBlockedIds } from '../db/safetyRepo';
-import { getPushToken, getStripeAccountId } from '../db/usersRepo';
+import { getPushToken, getStripeAccountId, getUserLocation, getUserLocationFull } from '../db/usersRepo';
 import { requireAuth } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
+import { haversineDistanceKm, getMaxTransactionDistanceKm } from '../utils/geo';
 import { sendPushNotification } from '../utils/pushNotifications';
 import { getPlatformFeePercent, getStripe } from '../utils/stripe';
+
+/**
+ * Checks the requester's distance from the listing's location. Returns an
+ * error message string if the transaction should be blocked (missing
+ * location on either side, or over the configured max distance), or null if
+ * it's fine to proceed. Only meaningful for physical listing types — callers
+ * skip this for idea/lesson.
+ */
+async function checkTransactionDistance(
+  listingRow: { locationLat: number | null; locationLng: number | null },
+  requesterId: string
+): Promise<string | null> {
+  if (listingRow.locationLat == null || listingRow.locationLng == null) {
+    return 'This listing has no location set — the owner needs to set one before it can accept requests.';
+  }
+  const requesterLoc = await getUserLocation(requesterId);
+  if (!requesterLoc) {
+    return 'Set your location in Settings before requesting, booking, or bidding on physical items.';
+  }
+  const distanceKm = haversineDistanceKm(listingRow.locationLat, listingRow.locationLng, requesterLoc.lat, requesterLoc.lng);
+  const maxKm = getMaxTransactionDistanceKm();
+  if (distanceKm > maxKm) {
+    return `This listing is ${Math.round(distanceKm).toLocaleString()} km away — too far for in-person pickup (max ${maxKm} km).`;
+  }
+  return null;
+}
 
 const router = Router();
 router.use(requireAuth);
@@ -58,6 +87,12 @@ const createListingSchema = z.object({
   depositAmountCents: z.number().int().min(0).max(1_000_000).optional(),
   startingBidCents: z.number().int().min(50).max(1_000_000).optional(),
   auctionEndsAt: z.string().datetime().optional(),
+  locationLat: z.number().min(-90).max(90).optional(),
+  locationLng: z.number().min(-180).max(180).optional(),
+  locationCity: z.string().trim().max(120).optional(),
+  locationRegion: z.string().trim().max(120).optional(),
+  locationCountry: z.string().trim().max(120).optional(),
+  locationCountryCode: z.string().trim().length(2).optional(),
 });
 
 const updateListingSchema = createListingSchema.partial().omit({ type: true });
@@ -69,13 +104,14 @@ router.get(
       type: listingTypeSchema.optional(),
       category: z.string().trim().min(1).optional(),
       q: z.string().trim().min(1).optional(),
+      sortByDistance: z.coerce.boolean().optional(),
     });
     const parsed = querySchema.safeParse(req.query);
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid query' });
     }
     const excludeOwnerIds = await listBlockedIds(req.userId!);
-    res.json(await listListings({ ...parsed.data, excludeOwnerIds }));
+    res.json(await listListings({ ...parsed.data, excludeOwnerIds, viewerId: req.userId! }));
   })
 );
 
@@ -125,6 +161,25 @@ router.post(
       return res.status(400).json({ message: 'auctionEndsAt must be in the future' });
     }
 
+    // Physical types need a resolved location before they can accept requests/bookings/bids
+    // (see checkTransactionDistance) -- fall back to the owner's profile location when the
+    // listing doesn't specify its own, since the item is usually wherever the owner is.
+    let location: LocationInput = {
+      locationLat: parsed.data.locationLat,
+      locationLng: parsed.data.locationLng,
+      locationCity: parsed.data.locationCity,
+      locationRegion: parsed.data.locationRegion,
+      locationCountry: parsed.data.locationCountry,
+      locationCountryCode: parsed.data.locationCountryCode,
+    };
+    if (isPhysicalListingType(parsed.data.type) && location.locationLat == null) {
+      const ownerLocation = await getUserLocationFull(req.userId!);
+      if (!ownerLocation) {
+        return res.status(400).json({ message: 'Set your location in Settings before creating this listing, or set one for this listing.' });
+      }
+      location = ownerLocation;
+    }
+
     const listing = await createListing({
       id: uuid(),
       ownerId: req.userId!,
@@ -140,6 +195,7 @@ router.post(
       depositAmountCents: parsed.data.depositAmountCents,
       startingBidCents: parsed.data.startingBidCents,
       auctionEndsAt: parsed.data.auctionEndsAt ? new Date(parsed.data.auctionEndsAt) : undefined,
+      ...location,
     });
     res.status(201).json(listing);
   })
@@ -155,9 +211,9 @@ router.get(
     if (!row) return res.status(404).json({ message: 'Listing not found' });
     await closeAuctionIfExpired(row);
 
-    const listing = await getListingById(req.params.id);
+    const listing = await getListingById(req.params.id, req.userId!);
     if (!listing) return res.status(404).json({ message: 'Listing not found' });
-    res.json(listing);
+    res.json({ ...listing, maxTransactionDistanceKm: getMaxTransactionDistanceKm() });
   })
 );
 
@@ -209,6 +265,10 @@ router.post(
     }
     if (row.status !== 'open') {
       return res.status(400).json({ message: 'This listing is no longer open' });
+    }
+    if (isPhysicalListingType(row.type)) {
+      const distanceError = await checkTransactionDistance(row, req.userId!);
+      if (distanceError) return res.status(400).json({ message: distanceError });
     }
 
     const bodySchema = z.object({ message: z.string().trim().max(1000).optional() });
@@ -320,6 +380,8 @@ router.post(
     if (row.type !== 'rental') return res.status(400).json({ message: 'This listing is not a rental' });
     if (row.ownerId === req.userId) return res.status(400).json({ message: 'You cannot book your own listing' });
     if (row.status !== 'open') return res.status(400).json({ message: 'This listing is not accepting bookings' });
+    const distanceError = await checkTransactionDistance(row, req.userId!);
+    if (distanceError) return res.status(400).json({ message: distanceError });
 
     const bodySchema = z.object({ startDate: dateStringSchema, endDate: dateStringSchema });
     const parsed = bodySchema.safeParse(req.body ?? {});
@@ -581,6 +643,8 @@ router.post(
     if (!row) return res.status(404).json({ message: 'Listing not found' });
     if (row.type !== 'auction') return res.status(400).json({ message: 'This listing is not an auction' });
     if (row.ownerId === req.userId) return res.status(400).json({ message: 'You cannot bid on your own listing' });
+    const distanceError = await checkTransactionDistance(row, req.userId!);
+    if (distanceError) return res.status(400).json({ message: distanceError });
 
     const bodySchema = z.object({ amountCents: z.number().int().min(1) });
     const parsed = bodySchema.safeParse(req.body ?? {});
