@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.15.1] - 2026-09-06
+
+### Fixed
+- **Nominatim returned place names in the local script** (e.g. Korean for a Seoul search) instead of English, since no language hint was sent to the geocoding API. Fixed by adding `accept-language=en` to every Nominatim request in `server/src/utils/geo.ts`.
+
+### Verified
+- **Stage 8 end-to-end, against the deployed production API**: the USA↔Korea case correctly blocked (~11,048km) for interest, rental booking, and auction bidding; a user with no location set correctly blocked with a clear message; a nearby user (3km away) succeeds with a computed `distanceKm` and zero raw coordinates in the response; listing creation blocked for physical types without a location and unaffected for `idea`; a listing with no explicit location correctly inherits the owner's profile location; Nominatim reverse/search endpoints confirmed live, cache confirmed via a measurable speedup on a repeated lookup, and (post-fix) English place names confirmed on redeploy.
+
 ## [2.15.0] - 2026-09-06
 
 ### Added
