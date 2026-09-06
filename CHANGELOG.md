@@ -9,7 +9,10 @@ All notable changes to this project are documented here. Format loosely follows 
 - **Rental Checkout Sessions failed on newer Stripe accounts** with "the product tax code is missing" — those accounts default to Managed Payments (Stripe as merchant of record), which is incompatible with this app's collect-then-transfer model. Explicitly disabled (`managed_payments: { enabled: false }`) on the rental Checkout Session.
 
 ### Verified
-- **Stage 4 end-to-end, with real Stripe test-mode transactions**: rental listing → booking request/accept → hosted Stripe Checkout payment (test card) → webhook-confirmed booking, all working live. The final payout step (transfer + deposit refund) correctly rejects with `insufficient_capabilities_for_transfer` until a connected account finishes bank-account linking — expected Stripe behavior, not a bug, and unrelated to the code path itself.
+- **Stage 4 end-to-end, with real Stripe test-mode transactions**: rental listing → booking request/accept → hosted Stripe Checkout payment (test card) → webhook-confirmed booking → owner payout transfer → deposit refund, all working live with a real connected test account that completed bank-account linking.
+
+### Known gap
+- The "Payouts" status in Settings never shows onboarding as complete, even once it genuinely is — the webhook destination's event scope is "Your account" only, not "connected accounts," so Stripe never sends `account.updated` for a connected account's capability changes. Fixing this needs a second webhook destination (new signing secret required); deferred since it only affects a status indicator, not real payments or payouts.
 
 ## [2.13.0] - 2026-09-06
 
