@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { User as PublicUser } from '@/store/useUserStore';
 
-export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial'] as const;
+export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial', 'rental'] as const;
 export type ListingType = (typeof LISTING_TYPES)[number];
 
 export const LISTING_TYPE_LABELS: Record<ListingType, string> = {
@@ -10,6 +10,7 @@ export const LISTING_TYPE_LABELS: Record<ListingType, string> = {
   give_away: 'Give away',
   exchange: 'Exchange',
   trial: 'Trial',
+  rental: 'Rental',
 };
 
 export interface Listing {
@@ -24,9 +25,35 @@ export interface Listing {
   media: string[];
   wantInReturn?: string;
   trialDays?: number;
+  pricePerDayCents?: number;
+  depositAmountCents?: number;
+  currency: string;
   status: 'open' | 'pending' | 'completed' | 'closed';
   createdAt: string;
   updatedAt: string;
+}
+
+export type BookingStatus = 'requested' | 'accepted' | 'confirmed' | 'declined' | 'completed' | 'cancelled';
+
+export interface Booking {
+  id: string;
+  listingId: string;
+  renterId: string;
+  renter?: PublicUser;
+  startDate: string;
+  endDate: string;
+  rentalFeeCents: number;
+  depositAmountCents: number;
+  status: BookingStatus;
+  depositResolution?: 'refunded' | 'claimed';
+  depositClaimedCents?: number;
+  createdAt: string;
+}
+
+/** The public availability view for non-owners — just which ranges are already taken. */
+export interface BookedRange {
+  startDate: string;
+  endDate: string;
 }
 
 export interface Interest {

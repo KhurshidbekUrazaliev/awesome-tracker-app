@@ -3,7 +3,7 @@ import { db } from './client';
 import { listingInterests, listings, users } from './schema';
 import { toPublicUser, type PublicUser } from './usersRepo';
 
-export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial'] as const;
+export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial', 'rental'] as const;
 export type ListingType = (typeof LISTING_TYPES)[number];
 
 export interface PublicListing {
@@ -18,6 +18,9 @@ export interface PublicListing {
   media: string[];
   wantInReturn?: string;
   trialDays?: number;
+  pricePerDayCents?: number;
+  depositAmountCents?: number;
+  currency: string;
   status: 'open' | 'pending' | 'completed' | 'closed';
   createdAt: string;
   updatedAt: string;
@@ -46,6 +49,9 @@ function toPublicListing(row: typeof listings.$inferSelect, owner?: typeof users
     media: row.media,
     wantInReturn: row.wantInReturn ?? undefined,
     trialDays: row.trialDays ?? undefined,
+    pricePerDayCents: row.pricePerDayCents ?? undefined,
+    depositAmountCents: row.depositAmountCents ?? undefined,
+    currency: row.currency,
     status: row.status as PublicListing['status'],
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -164,6 +170,8 @@ export interface CreateListingInput {
   media: string[];
   wantInReturn?: string;
   trialDays?: number;
+  pricePerDayCents?: number;
+  depositAmountCents?: number;
 }
 
 export async function createListing(input: CreateListingInput): Promise<PublicListing> {

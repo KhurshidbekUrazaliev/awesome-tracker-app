@@ -1,5 +1,5 @@
 import apiClient from '@/services/apiClient';
-import type { Interest, Listing, ListingType, Review } from '../store/useListingsStore';
+import type { BookedRange, Booking, Interest, Listing, ListingType, Review } from '../store/useListingsStore';
 
 export interface ListingFilters {
   type?: ListingType;
@@ -16,6 +16,8 @@ export interface CreateListingInput {
   media?: string[];
   wantInReturn?: string;
   trialDays?: number;
+  pricePerDayCents?: number;
+  depositAmountCents?: number;
 }
 
 export type BadgeId = 'generous_giver' | 'mentor' | 'trusted_trader' | 'five_star';
@@ -96,6 +98,60 @@ class ListingsService {
   async getUserReputation(userId: string): Promise<{ summary: ReputationSummary; reviews: Review[] }> {
     const response = await apiClient.get<{ summary: ReputationSummary; reviews: Review[] }>(`/reviews/users/${userId}`);
     return response.data;
+  }
+
+  async requestBooking(listingId: string, startDate: string, endDate: string): Promise<Booking> {
+    const response = await apiClient.post<Booking>(`/listings/${listingId}/bookings`, { startDate, endDate });
+    return response.data;
+  }
+
+  /** Owner gets every booking; anyone else gets just the already-taken date ranges. */
+  async getBookings(listingId: string): Promise<Booking[] | BookedRange[]> {
+    const response = await apiClient.get<Booking[] | BookedRange[]>(`/listings/${listingId}/bookings`);
+    return response.data;
+  }
+
+  /** The full detail of one booking — only visible to its renter or the listing owner. */
+  async getBooking(listingId: string, bookingId: string): Promise<Booking> {
+    const response = await apiClient.get<Booking>(`/listings/${listingId}/bookings/${bookingId}`);
+    return response.data;
+  }
+
+  /** A non-owner's own bookings on a listing, any status — so revisiting shows where their request stands. */
+  async getMyBookings(listingId: string): Promise<Booking[]> {
+    const response = await apiClient.get<Booking[]>(`/listings/${listingId}/bookings`, { params: { mine: 'true' } });
+    return response.data;
+  }
+
+  async acceptBooking(listingId: string, bookingId: string): Promise<void> {
+    await apiClient.post(`/listings/${listingId}/bookings/${bookingId}/accept`);
+  }
+
+  async declineBooking(listingId: string, bookingId: string): Promise<void> {
+    await apiClient.post(`/listings/${listingId}/bookings/${bookingId}/decline`);
+  }
+
+  async getCheckoutUrl(listingId: string, bookingId: string): Promise<string> {
+    const response = await apiClient.get<{ url: string }>(`/listings/${listingId}/bookings/${bookingId}/checkout-url`);
+    return response.data.url;
+  }
+
+  async completeBooking(
+    listingId: string,
+    bookingId: string,
+    resolution: { depositAction: 'refund' | 'claim'; claimAmountCents?: number }
+  ): Promise<void> {
+    await apiClient.post(`/listings/${listingId}/bookings/${bookingId}/complete`, resolution);
+  }
+
+  async getConnectStatus(): Promise<{ connected: boolean; onboardingComplete: boolean }> {
+    const response = await apiClient.get<{ connected: boolean; onboardingComplete: boolean }>('/payments/connect/status');
+    return response.data;
+  }
+
+  async startConnectOnboarding(refreshUrl: string, returnUrl: string): Promise<string> {
+    const response = await apiClient.post<{ url: string }>('/payments/connect/onboard', { refreshUrl, returnUrl });
+    return response.data.url;
   }
 }
 

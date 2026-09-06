@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.13.0] - 2026-09-06
+
+### Added
+- **Stage 4: rental listings with Stripe Connect** — the payment provider decision that had blocked this stage since the project began is now made (Stripe Connect, confirmed in the user's dashboard). New `rental` listing type with per-day pricing and an optional refundable deposit; a dedicated `rentalBookings` table tracks each booking's own lifecycle (`requested` → `accepted` → `confirmed` (paid) → `completed`) separately from the listing itself, since a rental listing stays open indefinitely for repeat bookings — a deliberate deviation from how every other listing type works. New `RentalAvailabilityCalendar` component for date-range selection. Stripe Connect Express onboarding lives under a new "Payouts" row in Settings; a new webhook route confirms payment and tracks onboarding completion. On completion, the owner is paid out (minus a configurable `PLATFORM_FEE_PERCENT`, defaulting to 0) and the deposit is refunded or partially claimed, trust-based with no arbitration UI. New migration `0007_melted_king_cobra.sql`.
+  - Known follow-up: rentals can't be reviewed yet (the existing review flow triggers off `listing.status === 'completed'`, which a rental listing never reaches by design).
+  - Pending: end-to-end verification against real Stripe test-mode keys, once added to `server/.env` and Render.
+
 ## [2.12.0] - 2026-09-06
 
 ### Added

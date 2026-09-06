@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, primaryKey, index, integer, jsonb, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, primaryKey, index, integer, jsonb, boolean, date } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -9,6 +9,10 @@ export const users = pgTable('users', {
   // Expo push token, registered by the client after requesting notification
   // permission. Null until the user has granted permission at least once.
   pushToken: text('push_token'),
+  // Stripe Connect Express account, for owners who want to receive rental
+  // payouts (Stage 4). Null until they complete onboarding.
+  stripeAccountId: text('stripe_account_id'),
+  stripeOnboardingComplete: boolean('stripe_onboarding_complete').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -51,9 +55,9 @@ export const messages = pgTable(
 );
 
 /**
- * Stage 1 listing types only (idea, lesson, give_away, exchange) — no money
- * involved. trial/rental/auction are added in later stages once a payment
- * provider is deliberately chosen (see docs/PRODUCT_PLAN.md, "Open Decisions").
+ * idea, lesson, give_away, exchange, trial — no money involved. rental
+ * (Stage 4, see docs/PRODUCT_PLAN.md) is the first paid type, via Stripe
+ * Connect; auction is still deferred.
  */
 export const listings = pgTable(
   'listings',
@@ -62,7 +66,7 @@ export const listings = pgTable(
     ownerId: text('owner_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    type: text('type').notNull(), // 'idea' | 'lesson' | 'give_away' | 'exchange' | 'trial'
+    type: text('type').notNull(), // 'idea' | 'lesson' | 'give_away' | 'exchange' | 'trial' | 'rental'
     title: text('title').notNull(),
     description: text('description').notNull(),
     category: text('category').notNull(),
@@ -72,6 +76,12 @@ export const listings = pgTable(
     wantInReturn: text('want_in_return'),
     // Only meaningful for type = 'trial': how many days the borrower gets to try it.
     trialDays: integer('trial_days'),
+    // Only meaningful for type = 'rental'. A rental listing stays 'open'
+    // indefinitely (available for repeat bookings) — see rentalBookings for
+    // the per-booking lifecycle.
+    pricePerDayCents: integer('price_per_day_cents'),
+    depositAmountCents: integer('deposit_amount_cents'),
+    currency: text('currency').notNull().default('usd'),
     status: text('status').notNull().default('open'), // 'open' | 'pending' | 'completed' | 'closed'
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -235,4 +245,40 @@ export const roomItems = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('room_items_room_id_idx').on(table.roomId, table.createdAt)]
+);
+
+/**
+ * Stage 4: one renter's request for a date range on a `rental` listing, and
+ * its lifecycle through payment and settlement. Deliberately a dedicated
+ * table rather than an extension of `listingInterests` — a rental listing
+ * stays 'open' indefinitely (repeat bookings), so booking lifecycle can't be
+ * tracked via `listings.status` the way the other listing types are.
+ */
+export const rentalBookings = pgTable(
+  'rental_bookings',
+  {
+    id: text('id').primaryKey(),
+    listingId: text('listing_id')
+      .notNull()
+      .references(() => listings.id, { onDelete: 'cascade' }),
+    renterId: text('renter_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date').notNull(),
+    // Snapshot of the listing's pricing at request time, so a later price
+    // change doesn't retroactively affect an in-flight or past booking.
+    rentalFeeCents: integer('rental_fee_cents').notNull(),
+    depositAmountCents: integer('deposit_amount_cents').notNull().default(0),
+    // 'requested' | 'accepted' | 'confirmed' | 'declined' | 'completed' | 'cancelled'
+    status: text('status').notNull().default('requested'),
+    stripeCheckoutSessionId: text('stripe_checkout_session_id'),
+    stripePaymentIntentId: text('stripe_payment_intent_id'),
+    // Set only once the booking is completed.
+    depositResolution: text('deposit_resolution'), // 'refunded' | 'claimed' | null
+    depositClaimedCents: integer('deposit_claimed_cents'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('rental_bookings_listing_id_status_idx').on(table.listingId, table.status)]
 );

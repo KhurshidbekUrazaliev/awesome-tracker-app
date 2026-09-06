@@ -10,9 +10,11 @@ import adminRoutes from './routes/admin';
 import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
 import listingRoutes from './routes/listings';
+import paymentRoutes from './routes/payments';
 import reviewRoutes from './routes/reviews';
 import roomRoutes from './routes/rooms';
 import safetyRoutes from './routes/safety';
+import stripeWebhookRoutes from './routes/stripeWebhook';
 import uploadRoutes from './routes/upload';
 import userRoutes from './routes/users';
 
@@ -44,6 +46,11 @@ app.use(
     autoLogging: { ignore: (req) => req.url === '/api/health' },
   })
 );
+// Stripe webhook signature verification needs the raw request body, not the
+// JSON-parsed one — this must be mounted (and thus matched) before the global
+// express.json() below, which would otherwise consume the body first.
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhookRoutes);
+
 app.use(express.json({ limit: '1mb' }));
 
 // Auth endpoints are the highest-value brute-force target; rate-limit them specifically.
@@ -81,6 +88,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/listings', listingRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/safety', safetyRoutes);
 app.use('/api/rooms', roomRoutes);

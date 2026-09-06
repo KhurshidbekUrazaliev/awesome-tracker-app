@@ -7,6 +7,13 @@ import MultiPhotoPicker from '@/components/MultiPhotoPicker';
 import { useListings } from '@/modules/listings/hooks/useListings';
 import { LISTING_TYPE_LABELS, LISTING_TYPES, type ListingType } from '@/modules/listings/store/useListingsStore';
 
+/** "$12.50" or "12.5" -> 1250 cents. Returns null for empty/invalid input. */
+function dollarsToCents(value: string): number | null {
+  const parsed = parseFloat(value);
+  if (!value.trim() || Number.isNaN(parsed) || parsed < 0) return null;
+  return Math.round(parsed * 100);
+}
+
 export default function CreateListingScreen() {
   const { createListing } = useListings();
   const [type, setType] = useState<ListingType>('idea');
@@ -16,6 +23,8 @@ export default function CreateListingScreen() {
   const [tags, setTags] = useState('');
   const [wantInReturn, setWantInReturn] = useState('');
   const [trialDays, setTrialDays] = useState('');
+  const [pricePerDay, setPricePerDay] = useState('');
+  const [deposit, setDeposit] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +37,16 @@ export default function CreateListingScreen() {
     const parsedTrialDays = parseInt(trialDays, 10);
     if (type === 'trial' && (!trialDays || Number.isNaN(parsedTrialDays) || parsedTrialDays < 1)) {
       setError('Enter how many days someone can try this for.');
+      return;
+    }
+    const pricePerDayCents = dollarsToCents(pricePerDay);
+    if (type === 'rental' && (!pricePerDayCents || pricePerDayCents < 50)) {
+      setError('Enter a price per day of at least $0.50.');
+      return;
+    }
+    const depositAmountCents = deposit.trim() ? dollarsToCents(deposit) : 0;
+    if (type === 'rental' && depositAmountCents === null) {
+      setError('Enter a valid deposit amount, or leave it blank.');
       return;
     }
     try {
@@ -45,6 +64,8 @@ export default function CreateListingScreen() {
         media: mediaUrls,
         wantInReturn: type === 'exchange' ? wantInReturn.trim() || undefined : undefined,
         trialDays: type === 'trial' ? parsedTrialDays : undefined,
+        pricePerDayCents: type === 'rental' ? pricePerDayCents! : undefined,
+        depositAmountCents: type === 'rental' && depositAmountCents ? depositAmountCents : undefined,
       });
       router.replace(`/listings/detail?id=${listing.id}`);
     } catch (err: any) {
@@ -116,6 +137,29 @@ export default function CreateListingScreen() {
             keyboardType="number-pad"
             containerClassName="mb-4"
           />
+        )}
+
+        {type === 'rental' && (
+          <>
+            <Input
+              label="Price per day"
+              value={pricePerDay}
+              onChangeText={(v) => setPricePerDay(v.replace(/[^0-9.]/g, ''))}
+              placeholder="e.g. 15.00"
+              keyboardType="decimal-pad"
+              leftIcon={<Text className="text-gray-500 dark:text-navy-300">$</Text>}
+              containerClassName="mb-4"
+            />
+            <Input
+              label="Refundable deposit (optional)"
+              value={deposit}
+              onChangeText={(v) => setDeposit(v.replace(/[^0-9.]/g, ''))}
+              placeholder="e.g. 50.00"
+              keyboardType="decimal-pad"
+              leftIcon={<Text className="text-gray-500 dark:text-navy-300">$</Text>}
+              containerClassName="mb-4"
+            />
+          </>
         )}
 
         <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">Photos (optional, up to 5)</Text>

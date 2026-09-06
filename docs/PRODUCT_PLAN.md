@@ -108,9 +108,14 @@ Each stage should be fully working, tested, and deployed before starting the nex
 - New `trial` type: a fixed try-period in days (`trialDays`), reusing the existing express-interest → accept → complete lifecycle and chat for handoff coordination — no new mechanics needed.
 - **Skipped the "convert to rental" hook** originally scoped here — with no Rental type to convert into yet (that's Stage 4), building it now would just be dead UI. Deferred entirely to Stage 4, when there's something real to wire it to.
 
-### Stage 4 — Rental listings (payments, part 1)
-- **Requires a deliberate decision on a payment provider** (Stripe Connect is the common choice for marketplace payouts between users, but this is an explicit open decision — see §6).
-- Availability calendar per item, pricing per duration, deposit/escrow handling, pickup/return confirmation flow.
+### Stage 4 — Rental listings (payments, part 1) — 🔶 Built, pending live verification
+- **Payment provider decided: Stripe Connect** (2026-09-06) — see §6.
+- New `rental` listing type: `pricePerDayCents`/`depositAmountCents`/`currency` on `listings`, plus a dedicated `rentalBookings` table (not an extension of `listingInterests` — a rental listing stays `open` indefinitely for repeat bookings, unlike every other type). Booking lifecycle: `requested` → `accepted` (owner approves, backend re-checks for a date-overlap conflict) → `confirmed` (paid — a Stripe Checkout Session, charged to the platform's balance, not destination-charged) → `completed` (owner settles: transfers the rental fee to the owner's connected account minus `PLATFORM_FEE_PERCENT`, and either refunds the deposit in full or lets the owner claim part/all of it — no arbitration UI, trust-based like the rest of the app).
+- Stripe Connect Express onboarding: `POST/GET /api/payments/connect/*`, a "Payouts" row in Settings.
+- `POST /api/stripe/webhook` confirms payment (`checkout.session.completed`) and tracks onboarding completion (`account.updated`) — mounted with `express.raw()` ahead of the app's global JSON body parser, the one new wiring point this required.
+- Availability calendar: new `components/RentalAvailabilityCalendar.tsx` (date-range selection, forked from the Rooms calendar's month-grid math, not shared — that component's single-day-dot data model doesn't fit ranges).
+- **Not yet done**: reviews after a completed rental (the existing review flow is keyed off `listing.status === 'completed'`, which rentals never reach by design — this is a real, scoped follow-up, not an oversight). No automated dispute arbitration for deposit claims, by design (trust-first, same as the rest of the app).
+- **Pending**: end-to-end verification with real Stripe test-mode keys, once the user adds them to `server/.env` and Render's environment variables.
 
 ### Stage 5 — Auction listings (payments, part 2)
 - Bidding engine, deadline-based closing, automatic winner notification, payment capture on win (reuses Stage 4's payment integration).
@@ -136,7 +141,7 @@ Each stage should be fully working, tested, and deployed before starting the nex
 
 1. ~~**Product name.**~~ **Decided: TrY.** Reflected in `app.config.ts` (name/slug/scheme/bundle id), `package.json`, and the in-app branding. Note: the GitHub repo itself is still named `awesome-tracker-app` — renaming the repo/deploy URLs is a separate, deliberate decision not yet made (see `app.config.ts` comment on `experiments.baseUrl`).
 2. ~~**Repurpose the existing codebase, or start fresh?**~~ **Decided: repurposed.** Stage 1 was built directly on top of the existing "AwesomeProject" codebase (auth, profile, chat, Supabase/Render/GitHub Pages pipeline all reused as-is).
-3. **Payment provider** for Stage 4/5 (rentals, auctions). Needs a deliberate choice (e.g., Stripe Connect for marketplace payouts) before those stages start — do not casually wire up payment code without this decision being made explicitly.
+3. ~~**Payment provider** for Stage 4/5 (rentals, auctions).~~ **Decided: Stripe Connect** (2026-09-06), for marketplace payouts between users. Stage 4 build is now unblocked.
 4. **Moderation policy** for public listings and lessons — what's disallowed, and whether moderation is manual (admin review queue) or automated, is not yet decided (deferred to Stage 2 at the earliest).
 5. **Verification** requirements (phone/ID) for trial/rental — not yet decided whether this is required or optional.
 

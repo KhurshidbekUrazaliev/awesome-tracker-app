@@ -55,6 +55,29 @@ export async function updatePushToken(id: string, pushToken: string): Promise<vo
   await db.update(users).set({ pushToken }).where(eq(users.id, id));
 }
 
+/** The raw Stripe Connect account id for a user, if any — not part of PublicUser. */
+export async function getStripeAccountId(id: string): Promise<string | null> {
+  const [row] = await db.select({ stripeAccountId: users.stripeAccountId }).from(users).where(eq(users.id, id)).limit(1);
+  return row?.stripeAccountId ?? null;
+}
+
+export async function setStripeAccountId(id: string, stripeAccountId: string): Promise<void> {
+  await db.update(users).set({ stripeAccountId }).where(eq(users.id, id));
+}
+
+export async function setStripeOnboardingComplete(stripeAccountId: string, complete: boolean): Promise<void> {
+  await db.update(users).set({ stripeOnboardingComplete: complete }).where(eq(users.stripeAccountId, stripeAccountId));
+}
+
+export async function getConnectStatus(id: string): Promise<{ connected: boolean; onboardingComplete: boolean }> {
+  const [row] = await db
+    .select({ stripeAccountId: users.stripeAccountId, stripeOnboardingComplete: users.stripeOnboardingComplete })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return { connected: !!row?.stripeAccountId, onboardingComplete: row?.stripeOnboardingComplete ?? false };
+}
+
 /** The raw push token for a user, for sending notifications — not part of PublicUser. */
 export async function getPushToken(id: string): Promise<string | null> {
   const [row] = await db.select({ pushToken: users.pushToken }).from(users).where(eq(users.id, id)).limit(1);

@@ -1,8 +1,50 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import * as Linking from 'expo-linking';
+import React, { useEffect, useState } from 'react';
+import { Platform, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
+import listingsService from '@/modules/listings/services/listingsService';
+
+function PayoutsRow() {
+  const [status, setStatus] = useState<{ connected: boolean; onboardingComplete: boolean } | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
+
+  useEffect(() => {
+    listingsService
+      .getConnectStatus()
+      .then(setStatus)
+      .catch(() => setStatus(null));
+  }, []);
+
+  const subtitle = status?.onboardingComplete
+    ? 'Connected — ready to receive rental payouts'
+    : status?.connected
+    ? "Setup started — finish adding your payout details"
+    : "Set this up to rent things out and get paid";
+
+  const handlePress = async () => {
+    try {
+      setIsStarting(true);
+      const returnUrl = Linking.createURL('/settings');
+      const url = await listingsService.startConnectOnboarding(returnUrl, returnUrl);
+      if (Platform.OS === 'web') {
+        window.location.href = url;
+      } else {
+        await Linking.openURL(url);
+      }
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  return (
+    <TouchableOpacity onPress={handlePress} disabled={isStarting} className="bg-white dark:bg-navy-800 p-4 rounded-lg shadow-sm mb-2">
+      <Text className="text-base font-medium text-gray-900 dark:text-white">💳 Payouts</Text>
+      <Text className="text-sm text-gray-500 dark:text-navy-300 mt-1">{subtitle}</Text>
+    </TouchableOpacity>
+  );
+}
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
@@ -33,6 +75,8 @@ export default function SettingsScreen() {
               <Text className="text-sm text-gray-500 dark:text-navy-300 mt-1">People you won&apos;t see or hear from</Text>
             </TouchableOpacity>
           </Link>
+
+          <PayoutsRow />
         </View>
 
         <TouchableOpacity onPress={logout} className="mt-8 mb-2 self-center flex-row items-center">
