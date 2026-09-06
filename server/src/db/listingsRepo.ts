@@ -302,7 +302,11 @@ export async function placeBid(listingId: string, bidderId: string, amountCents:
           eq(listings.type, 'auction'),
           eq(listings.status, 'open'),
           sql`${listings.auctionEndsAt} > now()`,
-          sql`(${listings.currentBidCents} IS NULL AND ${listings.startingBidCents} <= ${amountCents}) OR ${listings.currentBidCents} < ${amountCents}`
+          // Parenthesized as one self-contained condition — without the outer parens, SQL's AND-before-OR
+          // precedence would let "current_bid_cents < amount" alone satisfy the whole WHERE clause,
+          // bypassing the status/deadline checks entirely (confirmed via a real bid landing on a closed
+          // auction in verification).
+          sql`((${listings.currentBidCents} IS NULL AND ${listings.startingBidCents} <= ${amountCents}) OR ${listings.currentBidCents} < ${amountCents})`
         )
       )
       .returning();
