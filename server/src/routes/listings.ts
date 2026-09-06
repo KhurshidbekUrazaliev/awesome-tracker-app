@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { randomUUID as uuid } from 'node:crypto';
 import { z } from 'zod';
 import {
+  closeAuctionIfExpired,
   createInterest,
   createListing,
   deleteListing,
@@ -10,11 +11,14 @@ import {
   findListingRowById,
   getListingById,
   LISTING_TYPES,
+  listBidsForListing,
   listInterestsForListing,
   listListings,
   listListingsByOwner,
   listTrendingCategories,
+  placeBid,
   setInterestStatus,
+  setListingCheckoutSession,
   setListingStatus,
   updateListing,
 } from '../db/listingsRepo';
@@ -52,6 +56,8 @@ const createListingSchema = z.object({
   trialDays: z.number().int().min(1).max(90).optional(),
   pricePerDayCents: z.number().int().min(50).max(1_000_000).optional(),
   depositAmountCents: z.number().int().min(0).max(1_000_000).optional(),
+  startingBidCents: z.number().int().min(50).max(1_000_000).optional(),
+  auctionEndsAt: z.string().datetime().optional(),
 });
 
 const updateListingSchema = createListingSchema.partial().omit({ type: true });
@@ -109,6 +115,15 @@ router.post(
     if (parsed.data.type !== 'rental' && (parsed.data.pricePerDayCents || parsed.data.depositAmountCents)) {
       return res.status(400).json({ message: 'pricePerDayCents/depositAmountCents are only valid for rental listings' });
     }
+    if (parsed.data.type === 'auction' && (!parsed.data.startingBidCents || !parsed.data.auctionEndsAt)) {
+      return res.status(400).json({ message: 'startingBidCents and auctionEndsAt are required for auction listings' });
+    }
+    if (parsed.data.type !== 'auction' && (parsed.data.startingBidCents || parsed.data.auctionEndsAt)) {
+      return res.status(400).json({ message: 'startingBidCents/auctionEndsAt are only valid for auction listings' });
+    }
+    if (parsed.data.auctionEndsAt && new Date(parsed.data.auctionEndsAt) <= new Date()) {
+      return res.status(400).json({ message: 'auctionEndsAt must be in the future' });
+    }
 
     const listing = await createListing({
       id: uuid(),
@@ -123,6 +138,8 @@ router.post(
       trialDays: parsed.data.trialDays,
       pricePerDayCents: parsed.data.pricePerDayCents,
       depositAmountCents: parsed.data.depositAmountCents,
+      startingBidCents: parsed.data.startingBidCents,
+      auctionEndsAt: parsed.data.auctionEndsAt ? new Date(parsed.data.auctionEndsAt) : undefined,
     });
     res.status(201).json(listing);
   })
@@ -131,6 +148,13 @@ router.post(
 router.get(
   '/:id',
   asyncHandler(async (req, res) => {
+    // Lazy fallback: an auction past its deadline is closed here on-read, so
+    // viewing it is always self-correcting even if the closing interval in
+    // index.ts missed a tick (e.g. the free-tier instance was asleep).
+    const row = await findListingRowById(req.params.id);
+    if (!row) return res.status(404).json({ message: 'Listing not found' });
+    await closeAuctionIfExpired(row);
+
     const listing = await getListingById(req.params.id);
     if (!listing) return res.status(404).json({ message: 'Listing not found' });
     res.json(listing);
@@ -176,6 +200,9 @@ router.post(
     if (!row) return res.status(404).json({ message: 'Listing not found' });
     if (row.type === 'rental') {
       return res.status(400).json({ message: 'Use the booking flow for rental listings' });
+    }
+    if (row.type === 'auction') {
+      return res.status(400).json({ message: 'Use the bidding flow for auction listings' });
     }
     if (row.ownerId === req.userId) {
       return res.status(400).json({ message: 'You cannot express interest in your own listing' });
@@ -260,6 +287,9 @@ router.post(
     const accepted = await findAcceptedInterest(row.id);
     if (!accepted) {
       return res.status(400).json({ message: 'Accept an interest before marking this listing completed' });
+    }
+    if (row.type === 'auction' && !row.stripePaymentIntentId) {
+      return res.status(400).json({ message: "Waiting for the winner's payment before this can be marked completed" });
     }
 
     await setListingStatus(row.id, 'completed');
@@ -541,6 +571,94 @@ router.post(
     );
 
     res.status(204).send();
+  })
+);
+
+router.post(
+  '/:id/bids',
+  asyncHandler(async (req, res) => {
+    const row = await findListingRowById(req.params.id);
+    if (!row) return res.status(404).json({ message: 'Listing not found' });
+    if (row.type !== 'auction') return res.status(400).json({ message: 'This listing is not an auction' });
+    if (row.ownerId === req.userId) return res.status(400).json({ message: 'You cannot bid on your own listing' });
+
+    const bodySchema = z.object({ amountCents: z.number().int().min(1) });
+    const parsed = bodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.issues[0]?.message ?? 'Invalid input' });
+    }
+
+    const updated = await placeBid(row.id, req.userId!, parsed.data.amountCents);
+    if (!updated) {
+      return res.status(409).json({ message: 'This auction has ended, or your bid is too low' });
+    }
+
+    if (row.currentBidderId && row.currentBidderId !== req.userId) {
+      sendPushNotification(
+        await getPushToken(row.currentBidderId),
+        "You've been outbid",
+        `Someone placed a higher bid on "${row.title}".`,
+        { listingId: row.id }
+      );
+    }
+
+    res.status(201).json(updated);
+  })
+);
+
+router.get(
+  '/:id/bids',
+  asyncHandler(async (req, res) => {
+    const row = await findListingRowById(req.params.id);
+    if (!row) return res.status(404).json({ message: 'Listing not found' });
+    if (row.ownerId !== req.userId) {
+      return res.status(403).json({ message: 'Only the listing owner can view bid history' });
+    }
+    res.json(await listBidsForListing(row.id));
+  })
+);
+
+router.get(
+  '/:id/auction-checkout-url',
+  asyncHandler(async (req, res) => {
+    const row = await findListingRowById(req.params.id);
+    if (!row) return res.status(404).json({ message: 'Listing not found' });
+    if (row.type !== 'auction') return res.status(400).json({ message: 'This listing is not an auction' });
+    if (row.status !== 'pending') return res.status(400).json({ message: 'This auction is not awaiting payment' });
+    if (row.currentBidderId !== req.userId) {
+      return res.status(403).json({ message: 'Only the winning bidder can pay for this auction' });
+    }
+    if (row.stripePaymentIntentId) {
+      return res.status(400).json({ message: 'This auction has already been paid for' });
+    }
+
+    const ownerStripeAccountId = await getStripeAccountId(row.ownerId);
+    if (!ownerStripeAccountId) {
+      return res.status(400).json({ message: "The owner hasn't set up payouts yet — try again later" });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      // See the rental checkout-url route above for why this is required.
+      managed_payments: { enabled: false },
+      line_items: [
+        {
+          price_data: {
+            currency: row.currency,
+            product_data: { name: row.title },
+            unit_amount: row.currentBidCents!,
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: { type: 'auction', listingId: row.id },
+      success_url: `try://listings/detail?id=${row.id}&payment=success`,
+      cancel_url: `try://listings/detail?id=${row.id}&payment=cancelled`,
+    });
+
+    await setListingCheckoutSession(row.id, session.id);
+    res.json({ url: session.url });
   })
 );
 

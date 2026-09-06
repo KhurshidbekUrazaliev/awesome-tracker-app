@@ -2,6 +2,7 @@ import { router, Stack } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Button from '@/components/Button';
+import DateTimeField from '@/components/DateTimeField';
 import Input from '@/components/Input';
 import MultiPhotoPicker from '@/components/MultiPhotoPicker';
 import { useListings } from '@/modules/listings/hooks/useListings';
@@ -25,6 +26,8 @@ export default function CreateListingScreen() {
   const [trialDays, setTrialDays] = useState('');
   const [pricePerDay, setPricePerDay] = useState('');
   const [deposit, setDeposit] = useState('');
+  const [startingBid, setStartingBid] = useState('');
+  const [auctionEndsAt, setAuctionEndsAt] = useState<Date | null>(null);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +52,15 @@ export default function CreateListingScreen() {
       setError('Enter a valid deposit amount, or leave it blank.');
       return;
     }
+    const startingBidCents = dollarsToCents(startingBid);
+    if (type === 'auction' && (!startingBidCents || startingBidCents < 50)) {
+      setError('Enter a starting bid of at least $0.50.');
+      return;
+    }
+    if (type === 'auction' && (!auctionEndsAt || auctionEndsAt <= new Date())) {
+      setError('Pick an auction deadline in the future.');
+      return;
+    }
     try {
       setIsSubmitting(true);
       setError(null);
@@ -66,6 +78,8 @@ export default function CreateListingScreen() {
         trialDays: type === 'trial' ? parsedTrialDays : undefined,
         pricePerDayCents: type === 'rental' ? pricePerDayCents! : undefined,
         depositAmountCents: type === 'rental' && depositAmountCents ? depositAmountCents : undefined,
+        startingBidCents: type === 'auction' ? startingBidCents! : undefined,
+        auctionEndsAt: type === 'auction' ? auctionEndsAt!.toISOString() : undefined,
       });
       router.replace(`/listings/detail?id=${listing.id}`);
     } catch (err: any) {
@@ -157,6 +171,27 @@ export default function CreateListingScreen() {
               placeholder="e.g. 50.00"
               keyboardType="decimal-pad"
               leftIcon={<Text className="text-gray-500 dark:text-navy-300">$</Text>}
+              containerClassName="mb-4"
+            />
+          </>
+        )}
+
+        {type === 'auction' && (
+          <>
+            <Input
+              label="Starting bid"
+              value={startingBid}
+              onChangeText={(v) => setStartingBid(v.replace(/[^0-9.]/g, ''))}
+              placeholder="e.g. 10.00"
+              keyboardType="decimal-pad"
+              leftIcon={<Text className="text-gray-500 dark:text-navy-300">$</Text>}
+              containerClassName="mb-4"
+            />
+            <DateTimeField
+              label="Auction ends"
+              value={auctionEndsAt}
+              onChange={setAuctionEndsAt}
+              minimumDate={new Date()}
               containerClassName="mb-4"
             />
           </>

@@ -57,7 +57,10 @@ export const messages = pgTable(
 /**
  * idea, lesson, give_away, exchange, trial — no money involved. rental
  * (Stage 4, see docs/PRODUCT_PLAN.md) is the first paid type, via Stripe
- * Connect; auction is still deferred.
+ * Connect. auction (Stage 5) reuses the same Stripe Connect integration but,
+ * unlike rental, fits the generic open→pending→completed lifecycle via a
+ * synthetic accepted listingInterests row created when the auction closes —
+ * see auctionBids below for the per-bid history.
  */
 export const listings = pgTable(
   'listings',
@@ -66,7 +69,7 @@ export const listings = pgTable(
     ownerId: text('owner_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    type: text('type').notNull(), // 'idea' | 'lesson' | 'give_away' | 'exchange' | 'trial' | 'rental'
+    type: text('type').notNull(), // 'idea' | 'lesson' | 'give_away' | 'exchange' | 'trial' | 'rental' | 'auction'
     title: text('title').notNull(),
     description: text('description').notNull(),
     category: text('category').notNull(),
@@ -81,6 +84,17 @@ export const listings = pgTable(
     // the per-booking lifecycle.
     pricePerDayCents: integer('price_per_day_cents'),
     depositAmountCents: integer('deposit_amount_cents'),
+    // Only meaningful for type = 'auction'. currentBidCents/currentBidderId
+    // are the source of truth for the current price — auctionBids is just
+    // the audit trail. stripeCheckoutSessionId/stripePaymentIntentId track
+    // the winner's payment (there's no per-transaction row for auctions the
+    // way rentalBookings has for rentals).
+    startingBidCents: integer('starting_bid_cents'),
+    auctionEndsAt: timestamp('auction_ends_at', { withTimezone: true }),
+    currentBidCents: integer('current_bid_cents'),
+    currentBidderId: text('current_bidder_id').references(() => users.id, { onDelete: 'set null' }),
+    stripeCheckoutSessionId: text('stripe_checkout_session_id'),
+    stripePaymentIntentId: text('stripe_payment_intent_id'),
     currency: text('currency').notNull().default('usd'),
     status: text('status').notNull().default('open'), // 'open' | 'pending' | 'completed' | 'closed'
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -90,6 +104,7 @@ export const listings = pgTable(
     index('listings_status_created_at_idx').on(table.status, table.createdAt),
     index('listings_owner_id_idx').on(table.ownerId),
     index('listings_category_idx').on(table.category),
+    index('listings_type_status_ends_at_idx').on(table.type, table.status, table.auctionEndsAt),
   ]
 );
 
@@ -281,4 +296,25 @@ export const rentalBookings = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('rental_bookings_listing_id_status_idx').on(table.listingId, table.status)]
+);
+
+/**
+ * One bid on an auction listing. Pure audit/history — the current price and
+ * winner live denormalized on listings.currentBidCents/currentBidderId,
+ * updated atomically alongside each insert here (see placeBid).
+ */
+export const auctionBids = pgTable(
+  'auction_bids',
+  {
+    id: text('id').primaryKey(),
+    listingId: text('listing_id')
+      .notNull()
+      .references(() => listings.id, { onDelete: 'cascade' }),
+    bidderId: text('bidder_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    amountCents: integer('amount_cents').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('auction_bids_listing_id_created_at_idx').on(table.listingId, table.createdAt)]
 );

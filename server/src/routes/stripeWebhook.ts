@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import type Stripe from 'stripe';
 import { confirmBookingPayment, findBookingRowByCheckoutSessionId, hasConfirmedOverlap, setBookingStatus } from '../db/rentalBookingsRepo';
-import { setStripeOnboardingComplete } from '../db/usersRepo';
+import { confirmAuctionPayment, findListingRowById } from '../db/listingsRepo';
+import { getPushToken, getStripeAccountId, setStripeOnboardingComplete } from '../db/usersRepo';
 import { asyncHandler } from '../utils/asyncHandler';
 import { logger } from '../logger';
-import { getStripe } from '../utils/stripe';
+import { sendPushNotification } from '../utils/pushNotifications';
+import { getPlatformFeePercent, getStripe } from '../utils/stripe';
 
 const router = Router();
 
@@ -30,6 +32,41 @@ router.post(
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
+
+        if (session.metadata?.type === 'auction') {
+          const listingId = session.metadata.listingId;
+          if (!listingId || !paymentIntentId) break;
+
+          const listing = await findListingRowById(listingId);
+          if (!listing || listing.status !== 'pending' || listing.stripeCheckoutSessionId !== session.id) break;
+
+          await confirmAuctionPayment(listingId, paymentIntentId);
+
+          // A sale is a sale — no deposit to hold, unlike rentals, so the owner is paid out immediately.
+          const ownerStripeAccountId = await getStripeAccountId(listing.ownerId);
+          if (ownerStripeAccountId && listing.currentBidCents) {
+            const stripe = getStripe();
+            const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+            const chargeId = typeof paymentIntent.latest_charge === 'string' ? paymentIntent.latest_charge : undefined;
+            const platformFeeCents = Math.round((listing.currentBidCents * getPlatformFeePercent()) / 100);
+            await stripe.transfers.create({
+              amount: listing.currentBidCents - platformFeeCents,
+              currency: listing.currency,
+              destination: ownerStripeAccountId,
+              source_transaction: chargeId,
+            });
+          }
+
+          sendPushNotification(
+            await getPushToken(listing.ownerId),
+            'Auction paid!',
+            `The winner of "${listing.title}" has paid — mark it completed once you've handed it off.`,
+            { listingId: listing.id }
+          );
+          break;
+        }
+
         const bookingId = session.metadata?.bookingId;
         if (!bookingId) break;
 
@@ -43,7 +80,6 @@ router.post(
           break;
         }
 
-        const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
         if (paymentIntentId) await confirmBookingPayment(booking.id, paymentIntentId);
         break;
       }

@@ -11,6 +11,7 @@ export function useListingDetail(listingId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const isOwner = !!(listing && user && listing.ownerId === user.id);
+  const isCurrentBidder = !!(listing && user && listing.currentBidderId === user.id);
   const interests = interestsByListing[listingId] || [];
 
   const load = useCallback(async () => {
@@ -59,6 +60,7 @@ export function useListingDetail(listingId: string) {
   return {
     listing,
     isOwner,
+    isCurrentBidder,
     interests,
     isLoading,
     error,

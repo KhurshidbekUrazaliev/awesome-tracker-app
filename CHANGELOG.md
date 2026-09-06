@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.14.0] - 2026-09-06
+
+### Added
+- **Stage 5: auction listings**, reusing Stage 4's Stripe Connect integration as-is. New `auction` listing type with a starting bid and deadline; bidding is a single atomic transaction so concurrent bids and last-second deadline sniping are both handled safely with no special isolation level. Unlike rentals, auctions don't get their own bespoke booking table — closing an auction inserts a synthetic already-accepted row into the existing generic interest system for the highest bidder, so the whole existing completion/review pipeline works unmodified. This app's first background job: a 60-second in-process sweep closes expired auctions (plus a lazy on-read fallback so a missed tick, e.g. the free-tier instance asleep, never breaks correctness — only delays a notification). Winner-only Stripe Checkout for payment capture, sharing the existing webhook route (now branching on session metadata) with an immediate payout to the owner on payment (no deposit to hold, unlike a rental). New migration `0008_needy_professor_monster.sql`.
+  - Known follow-up: not yet verified end-to-end with real Stripe test-mode keys or exercised in a browser (see Stage 4's verification writeup for the intended process).
+
 ## [2.13.1] - 2026-09-06
 
 ### Fixed

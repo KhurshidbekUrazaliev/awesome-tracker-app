@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { User as PublicUser } from '@/store/useUserStore';
 
-export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial', 'rental'] as const;
+export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial', 'rental', 'auction'] as const;
 export type ListingType = (typeof LISTING_TYPES)[number];
 
 export const LISTING_TYPE_LABELS: Record<ListingType, string> = {
@@ -11,6 +11,7 @@ export const LISTING_TYPE_LABELS: Record<ListingType, string> = {
   exchange: 'Exchange',
   trial: 'Trial',
   rental: 'Rental',
+  auction: 'Auction',
 };
 
 export interface Listing {
@@ -27,10 +28,24 @@ export interface Listing {
   trialDays?: number;
   pricePerDayCents?: number;
   depositAmountCents?: number;
+  startingBidCents?: number;
+  auctionEndsAt?: string;
+  currentBidCents?: number;
+  currentBidderId?: string;
+  auctionPaymentComplete?: boolean;
   currency: string;
   status: 'open' | 'pending' | 'completed' | 'closed';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AuctionBid {
+  id: string;
+  listingId: string;
+  bidderId: string;
+  bidder?: PublicUser;
+  amountCents: number;
+  createdAt: string;
 }
 
 export type BookingStatus = 'requested' | 'accepted' | 'confirmed' | 'declined' | 'completed' | 'cancelled';

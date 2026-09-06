@@ -5,6 +5,8 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
 import { isDbReachable } from './db/client';
+import { closeExpiredAuctions } from './db/listingsRepo';
+import { getPushToken } from './db/usersRepo';
 import { logger } from './logger';
 import adminRoutes from './routes/admin';
 import authRoutes from './routes/auth';
@@ -17,6 +19,7 @@ import safetyRoutes from './routes/safety';
 import stripeWebhookRoutes from './routes/stripeWebhook';
 import uploadRoutes from './routes/upload';
 import userRoutes from './routes/users';
+import { sendPushNotification } from './utils/pushNotifications';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -108,8 +111,50 @@ const server = app.listen(PORT, () => {
   logger.info(`API server listening on http://localhost:${PORT}`);
 });
 
+// Best-effort sweep for auctions past their deadline — see closeAuctionIfExpired
+// in listingsRepo.ts for the lazy on-read fallback that covers correctness
+// when this instance was asleep (Render free tier) and missed ticks; nothing
+// can bid on or win an auction after its deadline regardless, so a missed
+// tick only delays the winner/owner notification, never breaks correctness.
+let isClosingAuctions = false;
+const auctionCloseInterval = setInterval(async () => {
+  if (isClosingAuctions) return;
+  isClosingAuctions = true;
+  try {
+    const closed = await closeExpiredAuctions();
+    for (const auction of closed) {
+      if (auction.winnerId) {
+        sendPushNotification(
+          await getPushToken(auction.winnerId),
+          'You won the auction!',
+          `You won "${auction.title}" — pay now to claim it.`,
+          { listingId: auction.listingId }
+        );
+        sendPushNotification(
+          await getPushToken(auction.ownerId),
+          'Your auction closed',
+          `"${auction.title}" closed with a winning bidder.`,
+          { listingId: auction.listingId }
+        );
+      } else {
+        sendPushNotification(
+          await getPushToken(auction.ownerId),
+          'Your auction closed',
+          `"${auction.title}" closed with no bids.`,
+          { listingId: auction.listingId }
+        );
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, 'Failed to close expired auctions');
+  } finally {
+    isClosingAuctions = false;
+  }
+}, 60_000).unref();
+
 function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down gracefully`);
+  clearInterval(auctionCloseInterval);
   server.close(() => {
     logger.info('Server closed');
     process.exit(0);

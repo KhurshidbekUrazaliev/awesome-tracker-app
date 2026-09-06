@@ -1,9 +1,10 @@
-import { and, desc, eq, ilike, notInArray, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, lte, notInArray, or, sql } from 'drizzle-orm';
+import { randomUUID as uuid } from 'node:crypto';
 import { db } from './client';
-import { listingInterests, listings, users } from './schema';
+import { auctionBids, listingInterests, listings, users } from './schema';
 import { toPublicUser, type PublicUser } from './usersRepo';
 
-export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial', 'rental'] as const;
+export const LISTING_TYPES = ['idea', 'lesson', 'give_away', 'exchange', 'trial', 'rental', 'auction'] as const;
 export type ListingType = (typeof LISTING_TYPES)[number];
 
 export interface PublicListing {
@@ -20,10 +21,24 @@ export interface PublicListing {
   trialDays?: number;
   pricePerDayCents?: number;
   depositAmountCents?: number;
+  startingBidCents?: number;
+  auctionEndsAt?: string;
+  currentBidCents?: number;
+  currentBidderId?: string;
+  auctionPaymentComplete?: boolean;
   currency: string;
   status: 'open' | 'pending' | 'completed' | 'closed';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PublicAuctionBid {
+  id: string;
+  listingId: string;
+  bidderId: string;
+  bidder?: PublicUser;
+  amountCents: number;
+  createdAt: string;
 }
 
 export interface PublicInterest {
@@ -51,10 +66,26 @@ function toPublicListing(row: typeof listings.$inferSelect, owner?: typeof users
     trialDays: row.trialDays ?? undefined,
     pricePerDayCents: row.pricePerDayCents ?? undefined,
     depositAmountCents: row.depositAmountCents ?? undefined,
+    startingBidCents: row.startingBidCents ?? undefined,
+    auctionEndsAt: row.auctionEndsAt?.toISOString(),
+    currentBidCents: row.currentBidCents ?? undefined,
+    currentBidderId: row.currentBidderId ?? undefined,
+    auctionPaymentComplete: row.stripePaymentIntentId != null,
     currency: row.currency,
     status: row.status as PublicListing['status'],
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function toPublicAuctionBid(row: typeof auctionBids.$inferSelect, bidder?: typeof users.$inferSelect): PublicAuctionBid {
+  return {
+    id: row.id,
+    listingId: row.listingId,
+    bidderId: row.bidderId,
+    bidder: bidder ? toPublicUser(bidder) : undefined,
+    amountCents: row.amountCents,
+    createdAt: row.createdAt.toISOString(),
   };
 }
 
@@ -172,6 +203,8 @@ export interface CreateListingInput {
   trialDays?: number;
   pricePerDayCents?: number;
   depositAmountCents?: number;
+  startingBidCents?: number;
+  auctionEndsAt?: Date;
 }
 
 export async function createListing(input: CreateListingInput): Promise<PublicListing> {
@@ -247,4 +280,101 @@ export async function findAcceptedInterest(listingId: string) {
     .where(and(eq(listingInterests.listingId, listingId), eq(listingInterests.status, 'accepted')))
     .limit(1);
   return row;
+}
+
+/**
+ * Place a bid, atomically. The UPDATE's WHERE clause is the single source of
+ * truth for "is this bid valid" (open, not past its deadline, higher than
+ * the current bid or at least the starting bid if none yet) — it returns no
+ * row if any of that fails, in which case the audit-log insert is skipped
+ * too. This needs no higher isolation level: two concurrent bids for the
+ * same amount can each only succeed against the price that was true when
+ * their UPDATE ran, so at most one of them matches the WHERE clause.
+ */
+export async function placeBid(listingId: string, bidderId: string, amountCents: number): Promise<PublicListing | null> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(listings)
+      .set({ currentBidCents: amountCents, currentBidderId: bidderId, updatedAt: new Date() })
+      .where(
+        and(
+          eq(listings.id, listingId),
+          eq(listings.type, 'auction'),
+          eq(listings.status, 'open'),
+          sql`${listings.auctionEndsAt} > now()`,
+          sql`(${listings.currentBidCents} IS NULL AND ${listings.startingBidCents} <= ${amountCents}) OR ${listings.currentBidCents} < ${amountCents}`
+        )
+      )
+      .returning();
+    if (!row) return null;
+    await tx.insert(auctionBids).values({ id: uuid(), listingId, bidderId, amountCents, createdAt: new Date() });
+    return toPublicListing(row);
+  });
+}
+
+/** Full bid history for a listing, newest first — owner-only view. */
+export async function listBidsForListing(listingId: string): Promise<PublicAuctionBid[]> {
+  const rows = await db
+    .select()
+    .from(auctionBids)
+    .innerJoin(users, eq(auctionBids.bidderId, users.id))
+    .where(eq(auctionBids.listingId, listingId))
+    .orderBy(desc(auctionBids.createdAt));
+  return rows.map((r) => toPublicAuctionBid(r.auction_bids, r.users));
+}
+
+export async function setListingCheckoutSession(id: string, sessionId: string): Promise<void> {
+  await db.update(listings).set({ stripeCheckoutSessionId: sessionId, updatedAt: new Date() }).where(eq(listings.id, id));
+}
+
+export async function confirmAuctionPayment(listingId: string, paymentIntentId: string): Promise<void> {
+  await db.update(listings).set({ stripePaymentIntentId: paymentIntentId, updatedAt: new Date() }).where(eq(listings.id, listingId));
+}
+
+export interface ClosedAuction {
+  listingId: string;
+  title: string;
+  ownerId: string;
+  winnerId: string | null;
+}
+
+/**
+ * Close one expired-but-still-open auction: no bids → 'closed', otherwise
+ * insert a synthetic accepted listingInterests row for the highest bidder
+ * (bypassing the normal request→accept dance, since the highest bid already
+ * won) and move the listing to 'pending' — from there it rejoins the
+ * generic interest/complete/review pipeline every other listing type uses.
+ * Shared by the interval in index.ts and the lazy on-read fallback in
+ * GET /:id, so both close auctions identically.
+ */
+async function closeAuctionRow(row: typeof listings.$inferSelect): Promise<ClosedAuction> {
+  if (!row.currentBidderId) {
+    await db.update(listings).set({ status: 'closed', updatedAt: new Date() }).where(eq(listings.id, row.id));
+    return { listingId: row.id, title: row.title, ownerId: row.ownerId, winnerId: null };
+  }
+  await db.insert(listingInterests).values({
+    id: uuid(),
+    listingId: row.id,
+    requesterId: row.currentBidderId,
+    status: 'accepted',
+  });
+  await db.update(listings).set({ status: 'pending', updatedAt: new Date() }).where(eq(listings.id, row.id));
+  return { listingId: row.id, title: row.title, ownerId: row.ownerId, winnerId: row.currentBidderId };
+}
+
+/** Lazy on-read fallback: close this one listing if it's an expired-but-open auction. Idempotent no-op otherwise. */
+export async function closeAuctionIfExpired(row: typeof listings.$inferSelect): Promise<ClosedAuction | null> {
+  if (row.type !== 'auction' || row.status !== 'open' || !row.auctionEndsAt || row.auctionEndsAt > new Date()) return null;
+  return closeAuctionRow(row);
+}
+
+/** Best-effort periodic sweep — see index.ts's setInterval. Not the only path to correctness; see closeAuctionIfExpired. */
+export async function closeExpiredAuctions(): Promise<ClosedAuction[]> {
+  const expired = await db
+    .select()
+    .from(listings)
+    .where(and(eq(listings.type, 'auction'), eq(listings.status, 'open'), lte(listings.auctionEndsAt, new Date())));
+  const closed: ClosedAuction[] = [];
+  for (const row of expired) closed.push(await closeAuctionRow(row));
+  return closed;
 }

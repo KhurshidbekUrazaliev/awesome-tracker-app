@@ -1,5 +1,5 @@
 import apiClient from '@/services/apiClient';
-import type { BookedRange, Booking, Interest, Listing, ListingType, Review } from '../store/useListingsStore';
+import type { AuctionBid, BookedRange, Booking, Interest, Listing, ListingType, Review } from '../store/useListingsStore';
 
 export interface ListingFilters {
   type?: ListingType;
@@ -18,6 +18,8 @@ export interface CreateListingInput {
   trialDays?: number;
   pricePerDayCents?: number;
   depositAmountCents?: number;
+  startingBidCents?: number;
+  auctionEndsAt?: string;
 }
 
 export type BadgeId = 'generous_giver' | 'mentor' | 'trusted_trader' | 'five_star';
@@ -142,6 +144,22 @@ class ListingsService {
     resolution: { depositAction: 'refund' | 'claim'; claimAmountCents?: number }
   ): Promise<void> {
     await apiClient.post(`/listings/${listingId}/bookings/${bookingId}/complete`, resolution);
+  }
+
+  async placeBid(listingId: string, amountCents: number): Promise<Listing> {
+    const response = await apiClient.post<Listing>(`/listings/${listingId}/bids`, { amountCents });
+    return response.data;
+  }
+
+  /** Full bid history — owner-only. */
+  async getBids(listingId: string): Promise<AuctionBid[]> {
+    const response = await apiClient.get<AuctionBid[]>(`/listings/${listingId}/bids`);
+    return response.data;
+  }
+
+  async getAuctionCheckoutUrl(listingId: string): Promise<string> {
+    const response = await apiClient.get<{ url: string }>(`/listings/${listingId}/auction-checkout-url`);
+    return response.data.url;
   }
 
   async getConnectStatus(): Promise<{ connected: boolean; onboardingComplete: boolean }> {

@@ -7,6 +7,7 @@ import Button from '@/components/Button';
 import Loader from '@/components/Loader';
 import PhotoGallery from '@/components/PhotoGallery';
 import RentalAvailabilityCalendar from '@/components/RentalAvailabilityCalendar';
+import { useAuctionBids } from '@/modules/listings/hooks/useAuctionBids';
 import { useListingDetail } from '@/modules/listings/hooks/useListingDetail';
 import { useRentalBookings } from '@/modules/listings/hooks/useRentalBookings';
 import { LISTING_TYPE_LABELS, type Booking } from '@/modules/listings/store/useListingsStore';
@@ -47,9 +48,21 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { listing, isOwner, interests, isLoading, error, expressInterest, acceptInterest, complete, submitReview } =
-    useListingDetail(id);
+  const {
+    listing,
+    isOwner,
+    isCurrentBidder,
+    interests,
+    isLoading,
+    error,
+    expressInterest,
+    acceptInterest,
+    complete,
+    submitReview,
+    refresh,
+  } = useListingDetail(id);
   const isRental = listing?.type === 'rental';
+  const isAuction = listing?.type === 'auction';
   const {
     bookings,
     bookedRanges,
@@ -60,6 +73,7 @@ export default function ListingDetailScreen() {
     payForBooking,
     completeBooking,
   } = useRentalBookings(id, isOwner, !!isRental);
+  const { bids, placeBid, payForAuction } = useAuctionBids(id, isOwner, !!isAuction);
 
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -67,6 +81,9 @@ export default function ListingDetailScreen() {
   const [comment, setComment] = useState('');
   const [reviewSent, setReviewSent] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [bidAmount, setBidAmount] = useState('');
+  const [isBidding, setIsBidding] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const { report, blockUser } = useSafetyActions();
   const [showReportInput, setShowReportInput] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -177,6 +194,36 @@ export default function ListingDetailScreen() {
     }
   };
 
+  const handlePlaceBid = async () => {
+    const amountCents = Math.round(parseFloat(bidAmount || '0') * 100);
+    if (!amountCents || amountCents <= (listing.currentBidCents ?? 0)) {
+      setActionError('Enter a bid higher than the current one.');
+      return;
+    }
+    try {
+      setIsBidding(true);
+      setActionError(null);
+      await placeBid(amountCents);
+      setBidAmount('');
+      await refresh();
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Failed to place bid');
+    } finally {
+      setIsBidding(false);
+    }
+  };
+
+  const handlePayForAuction = async () => {
+    try {
+      setIsPaying(true);
+      setActionError(null);
+      await payForAuction();
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Failed to start payment');
+      setIsPaying(false);
+    }
+  };
+
   const handleReview = async () => {
     if (rating === 0) return;
     try {
@@ -276,6 +323,21 @@ export default function ListingDetailScreen() {
           </View>
         )}
 
+        {isAuction && (
+          <View className="bg-gray-50 dark:bg-navy-900 rounded-xl p-4 mb-4 flex-row items-center justify-between">
+            <View>
+              <Text className="text-lg font-bold text-gray-900 dark:text-white">
+                {formatCents(listing.currentBidCents ?? listing.startingBidCents ?? 0)}
+              </Text>
+              <Text className="text-xs text-gray-500 dark:text-navy-300 mt-0.5">
+                {listing.currentBidCents != null ? 'Current bid' : 'Starting bid'}
+                {listing.status === 'open' && listing.auctionEndsAt && ` · Ends ${formatDate(listing.auctionEndsAt, 'relative')}`}
+              </Text>
+            </View>
+            <Ionicons name="hammer-outline" size={20} color="#7c3aed" />
+          </View>
+        )}
+
         <View className="flex-row items-center flex-wrap mb-5" style={{ gap: 6 }}>
           <View className="bg-gray-100 dark:bg-navy-800 px-2.5 py-1 rounded-full">
             <Text className="text-xs text-gray-600 dark:text-navy-300">{listing.category}</Text>
@@ -333,7 +395,7 @@ export default function ListingDetailScreen() {
         {actionError && <Text className="text-sm text-red-500 mb-4">{actionError}</Text>}
 
         {/* Non-owner: express interest / propose a trade */}
-        {!isRental && !isOwner && listing.status === 'open' && (
+        {!isRental && !isAuction && !isOwner && listing.status === 'open' && (
           <View>
             <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">
               {listing.type === 'exchange' ? 'Propose what you can offer' : 'Say a little about yourself (optional)'}
@@ -357,7 +419,7 @@ export default function ListingDetailScreen() {
         )}
 
         {/* Owner: manage interests */}
-        {!isRental && isOwner && listing.status === 'open' && (
+        {!isRental && !isAuction && isOwner && listing.status === 'open' && (
           <View>
             <Text className="text-base font-bold text-gray-900 dark:text-white mb-3">
               Interested people ({interests.length})
@@ -476,6 +538,68 @@ export default function ListingDetailScreen() {
               </View>
             ))}
           </View>
+        )}
+
+        {/* Non-owner: place a bid */}
+        {isAuction && !isOwner && listing.status === 'open' && (
+          <View>
+            <Text className="text-sm font-medium text-gray-700 dark:text-navy-200 mb-2">Your bid</Text>
+            <View className="flex-row items-center" style={{ gap: 8 }}>
+              <TextInput
+                value={bidAmount}
+                onChangeText={(v) => setBidAmount(v.replace(/[^0-9.]/g, ''))}
+                placeholder={`More than ${formatCents(listing.currentBidCents ?? listing.startingBidCents ?? 0)}`}
+                placeholderTextColor="#9CA3AF"
+                keyboardType="decimal-pad"
+                className="flex-1 border border-gray-300 dark:border-navy-600 rounded-lg px-3 py-3 text-gray-900 dark:text-white"
+              />
+              <Button title="Place Bid" onPress={handlePlaceBid} loading={isBidding} disabled={!bidAmount} />
+            </View>
+          </View>
+        )}
+
+        {/* Owner: read-only bid history */}
+        {isAuction && isOwner && listing.status === 'open' && (
+          <View>
+            <Text className="text-base font-bold text-gray-900 dark:text-white mb-3">Bids ({bids.length})</Text>
+            {bids.length === 0 && (
+              <Text className="text-sm text-gray-500 dark:text-navy-300">No bids yet — share this listing to get some.</Text>
+            )}
+            {bids.map((bid) => (
+              <View key={bid.id} className="bg-gray-50 dark:bg-navy-900 rounded-xl p-4 mb-2 flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Avatar uri={bid.bidder?.avatar} name={bid.bidder?.name} size="sm" />
+                  <Text className="text-sm font-semibold text-gray-900 dark:text-white ml-2">{bid.bidder?.name}</Text>
+                </View>
+                <Text className="text-sm font-bold text-gray-900 dark:text-white">{formatCents(bid.amountCents)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Winning bidder: pay for the auction */}
+        {isAuction && isCurrentBidder && listing.status === 'pending' && !listing.auctionPaymentComplete && (
+          <View className="bg-gray-50 dark:bg-navy-900 rounded-xl p-4">
+            <Text className="text-base font-bold text-gray-900 dark:text-white mb-1">You won this auction!</Text>
+            <Text className="text-sm text-gray-600 dark:text-navy-300 mb-3">
+              Pay {formatCents(listing.currentBidCents ?? 0)} to claim it.
+            </Text>
+            <Button title="Pay Now" onPress={handlePayForAuction} loading={isPaying} fullWidth />
+          </View>
+        )}
+
+        {/* Winning bidder, already paid: waiting on the owner to hand it off */}
+        {isAuction && isCurrentBidder && listing.status === 'pending' && listing.auctionPaymentComplete && (
+          <Text className="text-sm text-gray-600 dark:text-navy-300">
+            Paid — waiting for the owner to mark this completed.
+          </Text>
+        )}
+
+        {/* Everyone else once the auction has closed without them winning */}
+        {isAuction && !isOwner && !isCurrentBidder && (listing.status === 'pending' || listing.status === 'closed') && (
+          <Text className="text-sm text-gray-500 dark:text-navy-300">
+            {listing.status === 'closed' ? 'This auction closed with no bids.' : 'This auction has ended.'}
+          </Text>
         )}
 
         {isOwner && listing.status === 'pending' && acceptedInterest && (
