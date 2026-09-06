@@ -1,10 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import React, { useEffect, useState } from 'react';
 import { Platform, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
 import listingsService from '@/modules/listings/services/listingsService';
+
+// Stripe's Account Links API requires a real https:// return/refresh URL — it
+// rejects custom URL schemes like the try:// one Linking.createURL() would
+// produce on native. Reuse the same deployed web origin expo-router itself
+// is configured with (app.config.ts `extra.router.origin`), so completing
+// onboarding on a native device lands on the web app's Settings page instead.
+const WEB_ORIGIN = Constants.expoConfig?.extra?.router?.origin || 'https://khurshidbekurazaliev.github.io/awesome-tracker-app';
 
 function PayoutsRow() {
   const [status, setStatus] = useState<{ connected: boolean; onboardingComplete: boolean } | null>(null);
@@ -26,7 +34,7 @@ function PayoutsRow() {
   const handlePress = async () => {
     try {
       setIsStarting(true);
-      const returnUrl = Linking.createURL('/settings');
+      const returnUrl = Platform.OS === 'web' ? Linking.createURL('/settings') : `${WEB_ORIGIN}/settings`;
       const url = await listingsService.startConnectOnboarding(returnUrl, returnUrl);
       if (Platform.OS === 'web') {
         window.location.href = url;
