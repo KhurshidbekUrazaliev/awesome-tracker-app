@@ -72,6 +72,9 @@ async function callNominatim(path: string, params: Record<string, string>): Prom
   const url = new URL(`https://nominatim.openstreetmap.org${path}`);
   url.searchParams.set('format', 'jsonv2');
   url.searchParams.set('addressdetails', '1');
+  // Without this, Nominatim returns place names in the local language (e.g.
+  // Korean script for a Seoul result) rather than the app's English-only UI.
+  url.searchParams.set('accept-language', 'en');
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
 
   const response = await fetch(url.toString(), {
